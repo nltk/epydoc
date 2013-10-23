@@ -1,0 +1,550 @@
+% epydoc -- Demo & description of latex writer output
+%
+% Copyright (C) 2008 Edward Loper
+% Author: Edward Loper <edloper@loper.org>
+% URL: <http://epydoc.sf.net>
+%
+% $Id: apidoc.py 1729 2008-02-19 16:49:16Z edloper $
+
+% This is the basic preamble that's always included (in the api.tex file).
+% If any reStructuredText docstrings are used, then it is extended using
+% the preamble material used by reStructuredText.
+\documentclass{article}
+\usepackage[index]{epydoc}
+\usepackage[utf8]{inputenc}
+\definecolor{UrlColor}{rgb}{0,0.08,0.45}
+\usepackage[pdftex, pagebackref, pdftitle={API Documentation}, %
+  pdfcreator={epydoc 3.0.1}, bookmarks=true, bookmarksopen=false, %
+  pdfpagemode=UseOutlines, colorlinks=true, linkcolor=black, %
+  anchorcolor=black, citecolor=black, filecolor=black, menucolor=black, %
+  pagecolor=black, urlcolor=UrlColor]{hyperref}
+\begin{document}
+
+\title{Epydoc LaTeX Writer Output Demo}
+\author{}
+\date{}
+\maketitle
+
+This file provides a demonstration and description of epydoc's LaTeX
+output.  Most of the important information is in the comments, so you
+should read this file in its original form (and not as a rendered pdf).
+By looking at this file, and at the epydoc-default.sty file, you should
+be able to determine how to write your own customized style file.
+
+% ======================================================================
+
+\section{General Formatting}
+
+\subsection{Hyperlinks and Crossreferences}
+
+% The \EpydocDottedName command is used to escape dotted names.  In
+% particular, it escapes underscores (_) and allows non-hyphenated
+% wrapping at '.' separator characters.
+\EpydocDottedName{my_module.Zip}
+
+% The \EpydocHypertarget command is used to mark targets that hyperlinks
+% may point to.  It takes two arguments: a target label, and text
+% contents.  (In some cases, the text contents will be empty.)  Target
+% labels are formed by replacing '.'s in the name with ':'s.  The
+% default stylesheet creates a \label for the target label, and displays
+% the text.
+\EpydocHypertarget{foo:bar:baz}{\EpydocDottedName{foo.bar.baz}}
+
+% The \EpydocHyperlink command is used to create a link to a given target.
+% It takes two arguments: a target label, and text contents.  The
+% default stylesheet just displays the text contents.
+\EpydocHyperlink{foo:bar:baz}{\EpydocDottedName{foo.bar.baz}}
+
+% The \CrossRef command creates a cross-reference to a given target,
+% including a pageref.  It takes one argument, a target label.
+\CrossRef{foo:bar:baz}
+
+\subsection{Indexing}
+
+% The \EpydocIndex command is used to mark items that should be included
+% in the index.  It takes three arguments.  The first argument is the
+% item's case-normalized name; this is typically discarded, and is
+% simply used to ensure the proper (i.e., case-insensitive) sort order
+% in the index.  The second argument is the item's name; and the
+% third item is the item's "kind".  "kind" can be Package, Script, Module,
+% Class, Class Method, Static Method, Method, Function, or Variable.
+% This command is used inside of the \index{...} command.
+%
+% For modules and classes, the \index formatting strings "|(" and
+% "|)" are appended to mark the beginning and end of the object's
+% documentation.  For methods, variables, and nested classes, the
+% index formatting string "!" is used to create nested index entries.
+% See the docs for the latex \index command for more information.
+\index{\EpydocIndex{mymodule}{mymodule}{module}|(}
+\index{\EpydocIndex{foo}{Foo}{class}|(}
+\index{\EpydocIndex{foo}{Foo}{class}!\EpydocIndex{foo.f}{Foo.f}{method}}
+\index{\EpydocIndex{foo}{Foo}{class}!\EpydocIndex{foo.f}{Foo.g}{method}}
+\index{\EpydocIndex{foo}{Foo}{class}|)}
+\index{\EpydocIndex{mymodule}{mymodule}{module}|)}
+
+\subsection{Source Code Syntax Highlighting}
+
+% Doctest blocks are colorized using a variety of commands, all beginning
+% with the prefix "\pysrc".  See epydoc-default.sty for a full list.
+\begin{alltt}
+\pysrcprompt{{\textgreater}{\textgreater}{\textgreater} }f(x)
+\pysrcoutput{123}\end{alltt}
+
+\subsection{reStructuredText Admonitions}
+
+% These would be defined by rst's style file:
+\newlength{\admonitionwidth}
+\setlength{\admonitionwidth}{.8\textwidth}
+
+% The reSTadmonition environment is used to display reStructuredText 
+% admonitions, such as ``..warning::'' and ``..note::''.  It takes
+% one optional argument, the admonition type.
+\begin{reSTadmonition}[note]
+  This is a note.
+\end{reSTadmonition}
+
+\subsubsection{Sections inside Docstrings}
+
+% The commands \EpydocUserSection, \EpydocUserSubsection, and
+% \EpydocUserSubsubsection are used to add section headings inside
+% of docstrings
+\EpydocUserSection{Intra-docstring heading 1}
+\EpydocUserSubsection{Intra-docstring heading 2}
+\EpydocUserSubsubsection{Intra-docstring heading 3}
+
+% ======================================================================
+
+% Each module is listed in its own section.  (These sections are created
+% as separate files, and \include-ed into the main api.tex file).  The
+% section contains:
+%   - The module description (from the module's docstring)
+%   - A metadata section (author, version, warnings, etc)
+%   - A list of submodules (if it's a package)
+%   - A list of classes defined by the module (only if the
+%     --list-classes-separately option is used).
+%   - A subsection describing the functions defined by the module.
+%   - A subsection describing the variables defined by the module.
+%   - A subsection for each class defined by the module (only if
+%     the --list-classes-separately option is *not* used).
+\section{my\_module}
+
+  % The EpydocModuleDescription environment is used to mark the
+  % module's description (from its docstring)
+  \begin{EpydocModuleDescription}
+  This is an example module, used to demonstrate the LaTeX commands and
+  environments used by epydoc.
+  \end{EpydocModuleDescription}
+  
+  % Each metadata item is listed separately.  There are three environments
+  % and commands used for metadata:
+  %   - The \EpydocMetadataSingleValue command is used to display a metadata
+  %     field with a single value.  It takes two arguments: the metadata
+  %     field name and the metadata description.
+  %   - The \EpydocMetadataShortList environment is used to display a
+  %     metadata field with multiple values when the field declares that
+  %     short=True; i.e., that multiple values should be combined into a
+  %     single comma-delimited list.  It takes one argument (the metadata
+  %     field name); and items should be separated by the \and command.
+  %   - The \EpydocMetadataLongList environment is used to display a
+  %     metadata field with multiple values when the field declares that
+  %     short=False; i.e., that multiple values should be listed
+  %     separately in a bulleted list.  It takes one argument (the metadata
+  %     field name); and items should marked wit hthe \item command.
+  \EpydocMetadataSingleValue{See Also}{some reference.}
+
+  \begin{EpydocMetadataShortList}{Author}
+    joe \and mary
+  \end{EpydocMetadataShortList}
+
+  \begin{EpydocMetadataLongList}{Notes}
+    \item This is one note.
+    \item This is a second note.
+  \end{EpydocMetadataLongList}
+
+  % The list of submodules that a package contains is put it its own
+  % subsection.  The list is displayed using the EpydocModuleList
+  % environment.  Nested submodules are displayed using nested
+  % EpydocModuleList environments.  If the modules are divided into
+  % groups (with the epydoc @group field), then groups are displayed
+  % using the \EpydocGroup command, followed by a nested EpydocModuleList.
+  \subsection{Submodules}
+  \begin{EpydocModuleList}
+    \item[\EpydocHyperlink{my_module:foo}{\EpydocDottedName{my_module.foo}}]
+        Description of my\_module.foo.
+    \item[\EpydocHyperlink{my_module:bar}{\EpydocDottedName{my_module.bar}}]
+        Description of my\_module.bar.
+        \begin{EpydocModuleList}
+            \item[\EpydocHyperlink{my_module:bar:soap}
+                  {\EpydocDottedName{my_module.bar.soap}}]
+                Description of my\_module.bar.soap.
+        \end{EpydocModuleList}
+    \EpydocGroup{Some Group}
+      \begin{EpydocModuleList}
+        \item[\EpydocHyperlink{my_module:baz}
+              {\EpydocDottedName{my_module.baz}}]
+            Description of my\_module.baz.
+      \end{EpydocModuleList}
+  \end{EpydocModuleList}
+  
+  % The list of classes that a module contains is just like the list
+  % of submodules that a package contains, except that the list
+  % environment EpydocClassList and the command \EpydocGroup
+  % are used.  (Note that this list is only included when the
+  % --list-classes-separately option is used.)
+  \subsection{Classes}
+  \begin{EpydocClassList}
+    \item[\EpydocHyperlink{my_module:Zip}
+          {\EpydocDottedName{my_module.Zip}}]
+        Description of my\_module.Zip.
+    \item[\EpydocHyperlink{my_module:Zap}
+          {\EpydocDottedName{my_module.Zap}}]
+        Description of my\_module.Zap.
+    \EpydocGroup{Some Group}
+      \begin{EpydocClassList}
+        \item[\EpydocHyperlink{my_module:Zam}
+              {\EpydocDottedName{my_module.Zam}}]
+            Description of my\_module.Zam.
+        \item[\EpydocHyperlink{my_module:Zam}
+              {\EpydocDottedName{my_module.Zam}}]
+            Description of my\_module.Zam.
+      \end{EpydocClassList}
+  \end{EpydocClassList}
+  
+  % The functions that a module contains are listed in a separate
+  % subsection.  This subsection contains a single EpydocFunctionList
+  % environment
+  \subsection{Functions}
+  
+  % The EpydocFunctionList  environment is used to display functions.  
+  % It contains one \EpydocFunction command for each function.  This
+  % command takes 8 arguments:
+  % 
+  %   - The function's signature: an EpydocFunctionSignature environment
+  %     specifying the signature for the function.
+  %
+  %   - The function's description (from the docstring)
+  % 
+  %   - The function's parameters: An EpydocFunctionParameters list 
+  %     environment providing descriptions of the function's parameters.
+  %     (from the epydoc @param, @arg, @kwarg, @vararg, @type fields)
+  %
+  %   - The function's return description (from the epydoc @rerturns field)
+  %
+  %   - The function's return type (from the epydoc @rtype field)
+  %
+  %   - The function's exceptions: An EpydocFunctionRaises list
+  %     environment describing exceptions that the function may raise
+  %     (from the epydoc @raises field)
+  %
+  %   - The function's override: An EpydocFunctionOverrides command
+  %     describing the method that this function overrides (if any)
+  %
+  %   - The function's metadata: Zero or more EpydocMetadata*
+  %     commands/environments, taken from metadata fields (eg @author)
+  %
+  % All arguments except for the first (the signature) may be empty.
+  %
+  \begin{EpydocFunctionList}
+
+    \EpydocFunction{
+      % Argument 1: The function signature
+      %
+      % The EpydocFunctionSignature is used to display a function's
+      % signature.  It expects one argument, the function's name.  The
+      % body of the environment containd the parameter list.  The
+      % following commands are used in the parameter list, to mark
+      % individual parameters:
+      %   - \Param: Takes one required argument (the parameter name) and
+      %     one optional argument (the defaultt value).
+      %   - \VarArg: Takes one argument (the varargs parameter name)
+      %   - \KWArg: Takes one argument (the keyword parameter name)
+      %   - \GenericArg: Takes no arguments (this is used for '...', e.g.
+      %     when the signature is unknown).
+      %   - \TupleArg: Used inside of the \Param command, to mark
+      %     argument tuples.  Individual elements of the argument tuple
+      %     are separated by the \and command.
+      % 
+      % Parameters are separated by the \and command.
+      \begin{EpydocFunctionSignature}{myfunc}%
+          \Param{x}%
+          \and \Param{y}%
+          \and \Param{i}%
+          \and \Param{j}%
+          \and \Param{\TupleArg{a \and b}}%
+          \and \VarArg{rest}, \KWArg{keywords}%
+      \end{EpydocFunctionSignature}
+    }{
+      % Argument 2: The function description
+        This is an example function.
+    }{
+      % Argument 3: The function parameter descriptions
+      %
+      % The EpydocFunctionParameters list environment is used to
+      % describe the function's parameters.  It takes a single
+      % required argument, a string which can be used to set the
+      % label width for the list.  (I.e., this string is as long
+      % as the longest parameter name.)  The list contains one
+      % \item for each parameter description.  Parameter types
+      % are currently listed as part of the text (not using any 
+      % special environments or commands)
+      \begin{EpydocFunctionParameters}{xxxxxxxx}
+        \item[x] Description of parameter x.
+  
+                 (type=int)
+  
+        \item[i, j] Description of parameters x and y.
+  
+        \item[keywords] Description of the keywords parameter.
+      \end{EpydocFunctionParameters}
+    }{
+      % Argument 4: The function return value description
+      description of the return value
+    }{
+      % Argument 5: The function return value tupe
+      int
+    }{
+      % Argument 6: The function exception descriptions
+      %
+      % The EpydocRaises list environment is used to display the
+      % list of exceptions that the function may raise.  The list
+      % contains one \item for each exception.
+      \begin{EpydocFunctionRaises}
+        \item[ValueError] If there's some problem with a value.
+        \item[TypeError] If the wrong type is given.
+      \end{EpydocFunctionRaises}
+    }{
+      % Argument 7: The function overrides command
+      %
+      % (this is only used for methods, not functions)
+    }{
+      % Argument 8: The function metadta
+      %
+      % The metadata section uses the same commands that the module-
+      % level metadata section uses; see the discussion above.
+      \EpydocMetadataSingleValue{See Also}{some reference.}
+  
+      \begin{EpydocMetadataShortList}{Author}
+        joe \and mary
+      \end{EpydocMetadataShortList}
+  
+      \begin{EpydocMetadataLongList}{Notes}
+        \item This is one note.
+        \item This is a second note.
+      \end{EpydocMetadataLongList}
+    }
+
+    % If functions are divided into groups (with the epydoc @group
+    % field), then group headers are marked with the \EpydocGropu
+    % command.
+    \EpydocGroup{Some Group}
+
+    \EpydocFunction{
+      \begin{EpydocFunctionSignature}{\EpydocDottedName{some_func}}
+          \Param{x} \and \Param{y} \and \Param{z}
+      \end{EpydocFunctionSignature}}
+      {}{}{}{}{}{}{}
+
+  \end{EpydocFunctionList} 
+
+  % The variables that a module contains are listed in a separate
+  % subsection.  This section contains a single EpydocVariableList
+  % environment
+  \subsection{Variables}
+
+  % The EpydocVariableList environment is used to describe module
+  % variables.  It contains one \EpydocVariable command for each
+  % variable.  This command takes four required arguments:
+  % 
+  %   - The variable's name
+  %   - The variable's description (from the docstring)
+  %   - The variable's type (from the epydoc @type field)
+  %   - The variable's value
+  %
+  % If any of these arguments is not available, then the empty
+  % string will be used.
+  %
+  % If the variables are divided into groups (with the epydoc @group
+  % field), then the \EpydocInternalHeader command is used to mark
+  % the beginning of each variable group.
+  \begin{EpydocVariableList}
+    \EpydocVariable{\EpydocHyperlink{my_module:gorp}
+                    {\EpydocDottedName{my_module.gorp}}}
+                   {Description of the variable gorp}
+                   {int}
+                   {12}
+    \EpydocVariable{\EpydocHyperlink{my_module:moo}
+                    {\EpydocDottedName{my_module.moo}}}
+                   {Description of the variable moo}
+                   {str}
+                   {'hello'}
+    \EpydocVariable{\EpydocHyperlink{my_module:cow}
+                    {\EpydocDottedName{my_module.cow}}}
+                   {} % no description
+                   {} % no type
+                   {} % no value
+  \end{EpydocVariableList}
+
+  % The remaineder of the module's section consists of one subsection
+  % for each class defined by the module.  (However, if the
+  % --list-classes-separately option is used, then these subsections
+  % are not generated; instead, epydoc will generate a separate
+  % top-level section for each class.)  Each class section contains:
+  %   - The class's base tree (or a class tree graph, if the options
+  %     "--graph classtree" or "--graph umlclasstree" are used).
+  %   - A list of known subclasses.
+  %   - The class description (from the class's docstring)
+  %   - A metadata section (author, version, warnings, etc)
+  %   - A list of methods defined by the class
+  %   - A list of properties defined by the class
+  %   - A list of class variables defined by the class
+  %   - A list of instance variables defined by the class
+  \subsection{Class \EpydocDottedName{Zip}}
+
+    % The base tree is 'drawn' using a carefully constructed tabular
+    % environment.  Here's an example of what it can look like:
+    \begin{tabular}{cccccc}
+    \multicolumn{2}{r}{
+      \settowidth{\EpydocBCL}{\EpydocDottedName{MyBaseClass}}
+      \multirow{2}{\EpydocBCL}{\EpydocHyperlink{object}
+                        {\EpydocDottedName{MyBaseClass}}}}
+      && \\
+      \cline{3-3}
+      &&\multicolumn{1}{c|}{} && \\
+      &&\multicolumn{2}{l}{\textbf{\EpydocDottedName{my_module.Zip}}}
+    \end{tabular}
+
+    % The known subclasses are displayed using an \EpydocMetadataSingleValue
+    % command or an \EpydocMetadataShortList environment.  See the
+    % description of these above (for module metadata).
+    \begin{EpydocMetadataShortList}{Known Subclasses}
+      \EpydocHyperlink{my_module:Zap}{\EpydocDottedName{my_module.zap}}
+      \and
+      \EpydocHyperlink{my_module:Zam}{\EpydocDottedName{my_module.zam}}
+    \end{EpydocMetadataShortList}
+
+    % The EpydocClassDescription environment is used to mark the
+    % class's description (from its docstring)
+    \begin{EpydocClassDescription}
+    This is an example class, used to demonstrate the LaTeX commands and
+    environments used by epydoc.
+    \end{EpydocClassDescription}
+  
+    % The metadata section uses the same commands that the module-
+    % level metadata section uses; see the discussion above.
+    \EpydocMetadataSingleValue{See Also}{some reference.}
+
+    \begin{EpydocMetadataShortList}{Author}
+      joe \and mary
+    \end{EpydocMetadataShortList}
+
+    % The methods that a class defines are listed in a separate
+    % subsubsection.  This subsubsection contains a single
+    % EpydocFunctionList environment.
+    \subsubsection{Methods}
+
+    % The EpydocFunction environment was described above (when it was
+    % used with module-level functions.)  The only difference here is
+    % that functions may optionally include a command specifying
+    % what method is overridden by this method (\EpydocFunctionOverrides)
+    % as the seventh argument to the \EpydocFunction command.
+    \begin{EpydocFunctionList}
+      \EpydocFunction{
+        \begin{EpydocFunctionSignature}{mymethod}
+            \Param{x} \and \Param{y}
+        \end{EpydocFunctionSignature}}
+        {This is an example function.}
+        {}{}{}{}
+        {
+          % The \EpydocFunctionOverrides command specifies which method
+          % was overridden by this method.  It comes just before the
+          % metadata section.  It takes one optional argument, which will
+          % be "1" if documentation was inherited from the overridden
+          % method; and one required argument, containing the name of
+          % the overridden method.
+          \EpydocFunctionOverrides[1]{\EpydocHyperlink{MyBaseClass:mymethod}
+                                  {\EpydocDottedName{MyBaseClass.mymethod}}}
+        }{}
+    \end{EpydocFunctionList}
+
+    % The properties that a class defines are listed in a separate
+    % subsection.  This section contains a single EpydocPropertyList
+    % environment.
+    \subsubsection{Properties}
+
+      % The EpydocPropertyList environment is used to describe class
+      % properties.  It contains one \EpydocProperty command for each
+      % property.  This command takes six required arguments:
+      % 
+      %   - The property's name
+      %   - The property's description (from the docstring)
+      %   - The property's type (from the epydoc @type field)
+      %   - The property's fget function
+      %   - The property's fset function
+      %   - The property's fdel function
+      %
+      % If any of these arguments is not available, then the empty
+      % string will be used.
+      %
+      % If the properties are divided into groups (with the epydoc @group
+      % field), then the \EpydocInternalHeader command is used to mark
+      % the beginning of each property group.
+      %
+      % If any properties are inherited from a base class, and if
+      % --inheritance=listed (the default), then they will be listed
+      % after all the other properties, using the
+      % \EpydocInheritanceList command.  This command will be used
+      % once for each base class that properties are inherited from.
+      % It takes two arguments: the name of the base class that the
+      % properties were inherited from, and a list of property names.
+      \begin{EpydocPropertyList}
+        \EpydocProperty{\EpydocHyperlink{my_module:Zip:duck}
+                        {\EpydocDottedName{duck}}}
+                       {Description of the property duck}
+                       {int}
+                       {\EpydocDottedName{get_dock}}
+                       {\EpydocDottedName{set_dock}}
+                       {\EpydocDottedName{del_dock}}
+        \EpydocInheritanceList{MyBaseClass}{goose, pig}
+      \end{EpydocPropertyList}
+
+    % The class variabless that a class defines are listed in a 
+    % separate subsection.  This section contains a single 
+    % EpydocClassVariableList environment.
+    \subsubsection{Class Variables}
+
+      % The EpydocClassVariableList environment is used the same way as
+      % the EpydocVariableList environment (shown above), with one
+      % exception: if any variables are inherited from a base class,
+      % and if--inheritance=listed (the default), then they will be 
+      % listed after all the other properties, using the
+      % \EpydocInheritanceList command.  This command will be used
+      % once for each base class that variabless are inherited from.
+      % It takes two arguments: the name of the base class that the
+      % properties were inherited from, and a list of property names.
+      \begin{EpydocClassVariableList}
+        \EpydocVariable{\EpydocHyperlink{my_module:Zip:quack}
+                        {\EpydocDottedName{my_module.Zip.quack}}}
+                       {Description of the class variable quack}
+                       {str} % type
+                       {}    % no value
+        \EpydocInheritanceList{MyBaseClass}{oink, bark}
+      \end{EpydocClassVariableList}
+
+    % The instance variabless that a instance defines are listed in a 
+    % separate subsection.  This section contains a single 
+    % EpydocInstanceVariableList environment.
+    \subsubsection{Instance Variables}
+
+      % The EpydocInstanceVariableList environment is used the same 
+      % way as the EpydocClassVariableList environment (shown above).
+      \begin{EpydocClassVariableList}
+        \EpydocVariable{\EpydocHyperlink{my_module:Zip:florp}
+                        {\EpydocDottedName{my_module.Zip.flrop}}}
+                       {Description of the class variable florp}
+                       {list} % type
+                       {}     % no value
+        \EpydocInheritanceList{MyBaseClass}{blorp}
+      \end{EpydocClassVariableList}
+
+% That's all, folks!
+\end{document}
