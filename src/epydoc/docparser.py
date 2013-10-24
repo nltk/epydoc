@@ -64,7 +64,7 @@ import codecs
 # API documentation encoding:
 from epydoc.apidoc import *
 # For looking up the docs of builtins:
-import __builtin__, exceptions
+import builtins, exceptions
 import epydoc.docintrospecter 
 # Misc utility functions:
 from epydoc.util import *
@@ -231,7 +231,7 @@ def parse_docs(filename=None, name=None, context=None, is_script=False):
         # Use a python source version, if possible.
         if not is_script:
             try: filename = py_src_filename(filename)
-            except ValueError, e: raise ImportError('%s' % e)
+            except ValueError as e: raise ImportError('%s' % e)
 
         # Check the cache, first.
         if filename in _moduledoc_cache:
@@ -280,12 +280,12 @@ def parse_docs(filename=None, name=None, context=None, is_script=False):
         # Tokenize & process the contents of the module's source file.
         try:
             process_file(module_doc)
-        except tokenize.TokenError, e:
+        except tokenize.TokenError as e:
             msg, (srow, scol) = e.args
             raise ParseError('Error during parsing: %s '
                              '(%s, line %d, char %d)' %
                              (msg, module_doc.filename, srow, scol))
-        except (IndentationError, UnicodeDecodeError), e:
+        except (IndentationError, UnicodeDecodeError) as e:
             raise ParseError('Error during parsing: %s (%s)' %
                              (e, module_doc.filename))
 
@@ -326,7 +326,7 @@ def handle_special_module_vars(module_doc):
     if toktree is not None:
         try:
             public_names = set(parse_string_list(toktree))
-            for name, var_doc in module_doc.variables.items():
+            for name, var_doc in list(module_doc.variables.items()):
                 if name in public_names:
                     var_doc.is_public = True
                     if not isinstance(var_doc, ModuleDoc):
@@ -335,7 +335,7 @@ def handle_special_module_vars(module_doc):
                     var_doc.is_public = False
         except ParseError:
             # If we couldn't parse the list, give precedence to introspection.
-            for name, var_doc in module_doc.variables.items():
+            for name, var_doc in list(module_doc.variables.items()):
                 if not isinstance(var_doc, ModuleDoc):
                     var_doc.is_imported = UNKNOWN
         del module_doc.variables['__all__']
@@ -446,7 +446,7 @@ def _get_filename(identifier, path=None):
         fp, filename, (s,m,typ) = imp.find_module(identifier, path)
         if fp is not None: fp.close()
     except ImportError:
-        raise ImportError, 'No Python source file found.'
+        raise ImportError('No Python source file found.')
 
     if typ == imp.PY_SOURCE:
         return filename
@@ -454,21 +454,21 @@ def _get_filename(identifier, path=None):
         # See if we can find a corresponding non-compiled version.
         filename = re.sub('.py\w$', '.py', filename)
         if not os.path.exists(filename):
-            raise ImportError, 'No Python source file found.'
+            raise ImportError('No Python source file found.')
         return filename
     elif typ == imp.PKG_DIRECTORY:
         filename = os.path.join(filename, '__init__.py')
         if not os.path.exists(filename):
             filename = os.path.join(filename, '__init__.pyw')
             if not os.path.exists(filename):
-                raise ImportError, 'No package file found.'
+                raise ImportError('No package file found.')
         return filename
     elif typ == imp.C_BUILTIN:
-        raise ImportError, 'No Python source file for builtin modules.'
+        raise ImportError('No Python source file for builtin modules.')
     elif typ == imp.C_EXTENSION:
-        raise ImportError, 'No Python source file for c extensions.'
+        raise ImportError('No Python source file for c extensions.')
     else:
-        raise ImportError, 'No Python source file found.'
+        raise ImportError('No Python source file found.')
 
 #/////////////////////////////////////////////////////////////////
 #{ File tokenization loop
@@ -540,7 +540,7 @@ def process_file(module_doc):
     for toktype, toktext, (srow,scol), (erow,ecol), line_str in tok_iter:
         # BOM encoding marker: ignore.
         if (toktype == token.ERRORTOKEN and
-            (toktext == u'\ufeff' or
+            (toktext == '\ufeff' or
              toktext.encode(encoding) == '\xef\xbb\xbf')):
             pass
             
@@ -633,12 +633,12 @@ def process_file(module_doc):
                     prev_line_doc = process_line(
                         shallow_parse(line_toks), parent_docs, prev_line_doc, 
                         lineno, comments, decorators, encoding)
-                except ParseError, e:
+                except ParseError as e:
                     raise ParseError('Error during parsing: invalid '
                                      'syntax (%s, line %d) -- %s' %
                                      (module_doc.filename, lineno, e))
-                except KeyboardInterrupt, e: raise
-                except Exception, e:
+                except KeyboardInterrupt as e: raise
+                except Exception as e:
                     log.error('Internal error during parsing (%s, line '
                               '%s):\n%s' % (module_doc.filename, lineno, e))
                     raise
@@ -677,7 +677,7 @@ def add_to_group(container, api_doc, group_name):
     if isinstance(api_doc, VariableDoc):
         var_name = api_doc.name
     else:
-        if api_doc.canonical_name is UNKNOWN: log.debug('ouch', `api_doc`)
+        if api_doc.canonical_name is UNKNOWN: log.debug('ouch', repr(api_doc))
         var_name = api_doc.canonical_name[-1]
 
     for (name, group_vars) in container.group_specs:
@@ -925,7 +925,7 @@ def _process_fromstar_import(src, parent_docs):
         try: module_doc = _find(src)
         except ImportError: module_doc = None
         if isinstance(module_doc, ModuleDoc):
-            for name, imp_var in module_doc.variables.items():
+            for name, imp_var in list(module_doc.variables.items()):
                 # [xx] this is not exactly correct, but close.  It
                 # does the wrong thing if a __var__ is explicitly
                 # listed in __all__.
@@ -1483,7 +1483,7 @@ def apply_decorator(decorator_name, func_doc, parent_docs, lineno):
     elif DEFAULT_DECORATOR_BEHAVIOR == 'opaque':
         return GenericValueDoc(docs_extracted_by='parser')
     else:
-        raise ValueError, 'Bad value for DEFAULT_DECORATOR_BEHAVIOR'
+        raise ValueError('Bad value for DEFAULT_DECORATOR_BEHAVIOR')
 
 def init_arglist(func_doc, arglist):
     if not isinstance(arglist, list) or arglist[0] != (token.OP, '('):
@@ -1570,7 +1570,7 @@ def process_classdef(line, parent_docs, prev_line_doc, lineno,
         try:
             for base_name in parse_classdef_bases(line[2]):
                 class_doc.bases.append(find_base(base_name, parent_docs))
-        except ParseError, e:
+        except ParseError as e:
             log.warning("Parsing %s (line %s): Unable to extract "
                         "the base list for class '%s'." %
                         (parent_docs[0].filename, lineno, canonical_name))
@@ -1928,7 +1928,7 @@ def set_variable(namespace, var_doc, preserve_docstring=False):
     # This happens when the class definition has not been parsed, e.g. in
     # sf bug #1693253 on ``Exception.x = y``
     if namespace.sort_spec is UNKNOWN:
-        namespace.sort_spec = namespace.variables.keys()
+        namespace.sort_spec = list(namespace.variables.keys())
 
     # If we already have a variable with this name, then remove the
     # old VariableDoc from the sort_spec list; and if we gave its
@@ -1979,7 +1979,7 @@ def lookup_name(identifier, parent_docs):
     # nested scopes, because nested scope lookup does not apply to
     # nested class definitions, and we're not worried about variables
     # in nested functions.
-    if not isinstance(identifier, basestring):
+    if not isinstance(identifier, str):
         raise TypeError('identifier must be a string')
 
     # Locals

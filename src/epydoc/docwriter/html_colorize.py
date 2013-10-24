@@ -18,8 +18,8 @@ from epydoc import log
 from epydoc.util import py_src_filename
 from epydoc.apidoc import *
 import tokenize, token, cgi, keyword
-try: from cStringIO import StringIO
-except: from StringIO import StringIO
+try: from io import StringIO
+except: from io import StringIO
 
 ######################################################################
 ## Python source colorizer
@@ -460,7 +460,7 @@ class PythonSourceColorizer:
         self.find_line_offsets()
 
         num_lines = self.text.count('\n')+1
-        self.linenum_size = len(`num_lines+1`)
+        self.linenum_size = len(repr(num_lines+1))
         
         # Call the tokenizer, and send tokens to our `tokeneater()`
         # method.  If anything goes wrong, then fall-back to using
@@ -472,7 +472,7 @@ class PythonSourceColorizer:
             html = output.getvalue()
             if self.has_decorators:
                 html = self._FIX_DECORATOR_RE.sub(r'\2\1', html)
-        except tokenize.TokenError, ex:
+        except tokenize.TokenError as ex:
             html = self.text
 
         # Check for a unicode encoding declaration.
@@ -488,7 +488,7 @@ class PythonSourceColorizer:
         except LookupError:
             coding = 'iso-8859-1'
             html = html.decode(coding).encode('ascii', 'xmlcharrefreplace')
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError as e:
             log.warning("Unicode error while generating syntax-highlighted "
                         "source code: %s (%s)" % (e, self.module_filename))
             html = html.decode(coding, 'ignore').encode(
@@ -500,16 +500,17 @@ class PythonSourceColorizer:
 
         return html
 
-    def tokeneater(self, toktype, toktext, (srow,scol), (erow,ecol), line):
+    def tokeneater(self, toktype, toktext, xxx_todo_changeme, xxx_todo_changeme1, line):
         """
         A callback function used by C{tokenize.tokenize} to handle
         each token in the module.  C{tokeneater} collects tokens into
         the C{self.cur_line} list until a complete logical line has
         been formed; and then calls L{handle_line} to process that line.
         """
-        # If we encounter any errors, then just give up.
+        (srow,scol) = xxx_todo_changeme
+        (erow,ecol) = xxx_todo_changeme1
         if toktype == token.ERRORTOKEN:
-            raise tokenize.TokenError, toktype
+            raise tokenize.TokenError(toktype)
 
         # Did we skip anything whitespace?  If so, add a pseudotoken
         # for it, with toktype=None.  (Note -- this skipped string
@@ -574,7 +575,7 @@ class PythonSourceColorizer:
         # Loop through each token, and colorize it appropriately.
         for i, (toktype, toktext) in enumerate(line):
             if type(s) is not str:
-                if type(s) is unicode:
+                if type(s) is str:
                     log.error('While colorizing %s -- got unexpected '
                               'unicode string' % self.module_name)
                     s = s.encode('ascii', 'xmlcharrefreplace')
@@ -735,7 +736,7 @@ class PythonSourceColorizer:
                       (uid, css_class_html, targets_html, tooltip_html,
                        css_class_html, onclick))
             elif url:
-                if isinstance(url, unicode):
+                if isinstance(url, str):
                     url = url.encode('ascii', 'xmlcharrefreplace')
                 s += ('<a%s%s href="%s">' %
                       (tooltip_html, css_class_html, url))
@@ -747,8 +748,8 @@ class PythonSourceColorizer:
             else:
                 try:
                     s += self.add_line_numbers(cgi.escape(toktext), css_class)
-                except Exception, e:
-                    print (toktext, css_class, toktext.encode('ascii'))
+                except Exception as e:
+                    print((toktext, css_class, toktext.encode('ascii')))
                     raise
 
             if onclick: s += "</a></tt>"
