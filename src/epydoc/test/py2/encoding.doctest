@@ -54,15 +54,15 @@ Unicode tests:
     >>> utf8_test ='''\
     ... """abc ABC 123
     ...
-    ... 0x80-0x7ff range: 
-    ... \xc2\x80 \xc2\x81 \xdf\xbe \xdf\xbf
+    ... 0x80-0x7ff range:
+    ... \\xc2\\x80 \\xc2\\x81 \\xdf\\xbe \\xdf\\xbf
     ...
-    ... 0x800-0xffff range: 
-    ... \xe0\xa0\x80 \xe0\xa0\x81 \xef\xbf\xbe \xef\xbf\xbf
+    ... 0x800-0xffff range:
+    ... \\xe0\\xa0\\x80 \\xe0\\xa0\\x81 \\xef\\xbf\\xbe \\xef\\xbf\\xbf
     ...
-    ... 0x10000-0x10ffff range: 
-    ... \xf0\x90\x80\x80 \xf0\x90\x80\x81
-    ... \xf4\x8f\xbf\xbe \xf4\x8f\xbf\xbf
+    ... 0x10000-0x10ffff range:
+    ... \\xf0\\x90\\x80\\x80 \\xf0\\x90\\x80\\x81
+    ... \\xf4\\x8f\\xbf\\xbe \\xf4\\x8f\\xbf\\xbf
     ... """\n'''
     >>> utf8_bom = '\xef\xbb\xbf'
 
@@ -100,7 +100,7 @@ Tests for 'coding' directive on the second line:
     ... """abc ABC 123 \x80 \x82 \x83 \xff"""
     ... ''')
     <p>abc ABC 123 &#8364; &#8218; &#402; &#255;</p>
-    
+
     >>> testencoding('''# comment on the first line.\n# -*- coding: cp1252 -*-
     ... """abc ABC 123 \x80 \x82 \x83 \xff"""
     ... ''')
@@ -123,7 +123,7 @@ Tests for shift-jis
     >>> testencoding('''# -*- coding: shift_jis -*-
     ... """abc ABC 123 \xA1 \xA2 \xA3"""
     ... ''') # doctest: +PYTHON2.4
-    abc ABC 123 &#65377; &#65378; &#65379;
+    <p>abc ABC 123 &#65377; &#65378; &#65379;</p>
 
 Str/Unicode Test
 ================
@@ -152,7 +152,7 @@ as latin-1.  An example of this is a non-unicode docstring for
 properties:
 
     >>> testencoding('''# -*- coding: utf-8 -*-
-    ... p=property(doc="""\xc2\x80""")
+    ... p=property(doc="""\\xc2\\x80""")
     ... ''') # doctest: +ELLIPSIS
     <property object at ...>'s docstring is not a unicode string, but it contains non-ascii data -- treating it as latin-1.
     &#194;&#128;
@@ -234,7 +234,7 @@ Make sure that docstrings are rendered correctly in different contexts.
     ...     @cvar y: abc ABC 123 \xc2\x80 \xdf\xbf \xe0\xa0\x80
     ...     @type x: abc ABC 123 \xc2\x80 \xdf\xbf \xe0\xa0\x80
     ...     """
-    ...     
+    ...
     ...     z = property(doc=u"abc ABC 123 \xc2\x80 \xdf\xbf \xe0\xa0\x80")
     ... ''')
     abc ABC 123 &#128; &#2047; &#2048;

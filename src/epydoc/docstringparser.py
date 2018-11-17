@@ -22,6 +22,9 @@ C{APIDoc}, or add information to attributes other than the metadata
 dictionary.  Special fields are are handled by field handler
 functions, which are registered using L{register_field_handler}.
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 
@@ -37,7 +40,9 @@ from epydoc.docintrospecter import introspect_docstring_lineno
 from epydoc.util import py_src_filename
 from epydoc import log
 import epydoc.docparser
-import __builtin__, exceptions
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 ######################################################################
 # Docstring Fields
@@ -88,8 +93,23 @@ class DocstringField:
 
     def __cmp__(self, other):
         if not isinstance(other, DocstringField): return -1
-        return cmp(self.tags, other.tags)
-    
+        return (self.tags > other.tags) - (self.tags < other.tags)
+
+    if six.PY3:
+
+        def __lt__(self, other):
+            return self.__cmp__(other) < 0
+        def __le__(self, other):
+            return self.__cmp__(other) <= 0
+        def __eq__(self, other):
+            return self.__cmp__(other) == 0
+        def __ne__(self, other):
+            return self.__cmp__(other) != 0
+        def __ge__(self, other):
+            return self.__cmp__(other) >= 0
+        def __gt__(self, other):
+            return self.__cmp__(other) > 0
+
     def __hash__(self):
         return hash(self.tags)
 
@@ -102,7 +122,7 @@ STANDARD_FIELDS = [
     #: C{@deffield} field.  The order in which fields are listed here
     #: determines the order in which they will be displayed in the
     #: output.
-    
+
     # If it's deprecated, put that first.
     DocstringField(['deprecated', 'depreciated'],
              'Deprecated', multivalue=0, varnames=['__deprecated__']),
@@ -113,7 +133,7 @@ STANDARD_FIELDS = [
     DocstringField(['date'], 'Date', multivalue=0,
                    varnames=['__date__']),
     DocstringField(['status'], 'Status', multivalue=0),
-    
+
     # Bibliographic Info
     DocstringField(['author', 'authors'], 'Author', 'Authors', short=1,
                    varnames=['__author__', '__authors__']),
@@ -145,7 +165,7 @@ STANDARD_FIELDS = [
 
     # Changes made
     DocstringField(['change', 'changed'], 'Change Log'),
-                   
+
     # Crossreferences
     DocstringField(['see', 'seealso'], 'See Also', short=1),
 
@@ -172,7 +192,7 @@ def parse_docstring(api_doc, docindex, suppress_warnings=[]):
     Process the given C{APIDoc}'s docstring.  In particular, populate
     the C{APIDoc}'s C{descr} and C{summary} attributes, and add any
     information provided by fields in the docstring.
-    
+
     @param docindex: A DocIndex, used to find the containing
         module (to look up the docformat); and to find any
         user docfields defined by containing objects.
@@ -185,7 +205,7 @@ def parse_docstring(api_doc, docindex, suppress_warnings=[]):
             log.debug("%s's docstring processed twice" %
                       api_doc.canonical_name)
         return
-        
+
     initialize_api_doc(api_doc)
 
     # If there's no docstring, then check for special variables (e.g.,
@@ -204,7 +224,7 @@ def parse_docstring(api_doc, docindex, suppress_warnings=[]):
 
     # A list of markup errors from parsing.
     parse_errors = []
-    
+
     # Extract a signature from the docstring, if it has one.  This
     # overrides any signature we got via introspection/parsing.
     if isinstance(api_doc, RoutineDoc):
@@ -214,7 +234,7 @@ def parse_docstring(api_doc, docindex, suppress_warnings=[]):
     # `ParseError` objects in the errors list.
     parsed_docstring = markup.parse(api_doc.docstring, docformat,
                                     parse_errors)
-        
+
     # Divide the docstring into a description and a list of
     # fields.
     descr, fields = parsed_docstring.split_fields(parse_errors)
@@ -242,14 +262,14 @@ def parse_docstring(api_doc, docindex, suppress_warnings=[]):
                 try:
                     process_field(init_api_doc, docindex, field.tag(),
                                     field.arg(), field.body())
-                except ValueError, e: field_warnings.append(str(e))
+                except ValueError as e: field_warnings.append(str(e))
 
     # Process fields
     for field in fields:
         try:
             process_field(api_doc, docindex, field.tag(),
                                field.arg(), field.body())
-        except ValueError, e: field_warnings.append(str(e))
+        except ValueError as e: field_warnings.append(str(e))
 
     # Check to make sure that all type parameters correspond to
     # some documented parameter.
@@ -303,7 +323,7 @@ def add_metadata_from_var(api_doc, field):
         value = []
 
         # Try extracting the value from the pyval.
-        ok_types = (basestring, int, float, bool, type(None))
+        ok_types = six.string_types + (int, float, bool, type(None))
         if val_doc.pyval is not UNKNOWN:
             if isinstance(val_doc.pyval, ok_types):
                 value = [val_doc.pyval]
@@ -323,13 +343,13 @@ def add_metadata_from_var(api_doc, field):
                 try: value = epydoc.docparser.parse_string_list(val_doc.toktree)
                 except KeyboardInterrupt: raise
                 except: pass
-                
+
         # Add any values that we found.
         for elt in value:
-            if isinstance(elt, str):
+            if isinstance(elt, six.binary_type):
                 elt = decode_with_backslashreplace(elt)
             else:
-                elt = unicode(elt)
+                elt = six.text_type(elt)
             elt = epytext.ParsedEpytextDocstring(
                 epytext.parse_as_para(elt), inline=True)
 
@@ -478,12 +498,12 @@ def report_errors(api_doc, docindex, parse_errors, field_warnings):
     # 'in' or '==', then a user __cmp__ method might raise an
     # exception, or lie.
     if isinstance(api_doc, ValueDoc) and api_doc != module:
-        if module not in (None, UNKNOWN) and module.pyval is exceptions:
+        if module not in (None, UNKNOWN) and module.pyval is six.moves.exceptions:
             return
-        for builtin_val in __builtin__.__dict__.values():
+        for builtin_val in six.moves.builtins.__dict__.values():
             if builtin_val is api_doc.pyval:
                 return
-        
+
     # Get the start line of the docstring containing the error.
     startline = api_doc.docstring_lineno
     if startline in (None, UNKNOWN):
@@ -497,7 +517,7 @@ def report_errors(api_doc, docindex, parse_errors, field_warnings):
         header += 'line %d, ' % startline
     header += 'in %s' % name
     log.start_block(header)
-    
+
 
     # Display all parse errors.  But first, combine any errors
     # with duplicate description messages.
@@ -516,8 +536,8 @@ def report_errors(api_doc, docindex, parse_errors, field_warnings):
             error.set_linenum_offset(startline)
             message = error.descr()
             messages.setdefault(message, []).append(error.linenum())
-        message_items = messages.items()
-        message_items.sort(lambda a,b:cmp(min(a[1]), min(b[1])))
+        message_items = list(messages.items())
+        message_items.sort(key=lambda a,b:six.cmp(min(a[1]), min(b[1])))
         for message, linenums in message_items:
             linenums = [n for n in linenums if n is not None]
             if len(linenums) == 0:
@@ -658,7 +678,7 @@ def process_include_field(api_doc, docindex, tag, arg, descr):
     #   c. append descr and process all fields.
     # in any case, mark any errors we may find as coming from an
     # imported docstring.
-    
+
     # how does this interact with documentation inheritance??
     raise ValueError('%s not implemented yet' % tag)
 
@@ -707,7 +727,7 @@ def process_deffield_field(api_doc, docindex, tag, arg, descr):
         docstring_field = _descr_to_docstring_field(arg, descr)
         docstring_field.varnames.append("__%s__" % arg)
         api_doc.extra_docstring_fields.append(docstring_field)
-    except ValueError, e:
+    except ValueError as e:
         raise ValueError('Bad %s: %s' % (tag, e))
 
 def process_raise_field(api_doc, docindex, tag, arg, descr):
@@ -745,12 +765,12 @@ def process_type_field(api_doc, docindex, tag, arg, descr):
 
     else:
         raise ValueError(BAD_CONTEXT % tag)
-        
+
 def process_var_field(api_doc, docindex, tag, arg, descr):
     _check(api_doc, tag, arg, context=ModuleDoc, expect_arg=True)
     for ident in re.split('[:;, ] *', arg):
         set_var_descr(api_doc, ident, descr)
-        
+
 def process_cvar_field(api_doc, docindex, tag, arg, descr):
     # If @cvar is used *within* a variable, then use it as the
     # variable's description, and treat the variable as a class var.
@@ -767,7 +787,7 @@ def process_cvar_field(api_doc, docindex, tag, arg, descr):
         for ident in re.split('[:;, ] *', arg):
             set_var_descr(api_doc, ident, descr)
             api_doc.variables[ident].is_instvar = False
-        
+
 def process_ivar_field(api_doc, docindex, tag, arg, descr):
     # If @ivar is used *within* a variable, then use it as the
     # variable's description, and treat the variable as an instvar.
@@ -876,7 +896,7 @@ def set_var_descr(api_doc, ident, descr):
         api_doc.variables[ident] = VariableDoc(
             container=api_doc, name=ident,
             canonical_name=api_doc.canonical_name+ident)
-                                      
+
     var_doc = api_doc.variables[ident]
     if var_doc.descr not in (None, UNKNOWN):
         raise ValueError(REDEFINED % ('description for '+ident))
@@ -889,12 +909,12 @@ def set_var_type(api_doc, ident, descr):
         api_doc.variables[ident] = VariableDoc(
             container=api_doc, name=ident,
             canonical_name=api_doc.canonical_name+ident)
-        
+
     var_doc = api_doc.variables[ident]
     if var_doc.type_descr not in (None, UNKNOWN):
         raise ValueError(REDEFINED % ('type for '+ident))
     var_doc.type_descr = descr
-        
+
 def _check(api_doc, tag, arg, context=None, expect_arg=None):
     if context is not None:
         if not isinstance(api_doc, context):
@@ -931,12 +951,12 @@ def get_docformat(api_doc, docindex):
 def unindent_docstring(docstring):
     # [xx] copied from inspect.getdoc(); we can't use inspect.getdoc()
     # itself, since it expects an object, not a string.
-    
+
     if not docstring: return ''
     lines = docstring.expandtabs().split('\n')
 
     # Find minimum indentation of any non-blank lines after first line.
-    margin = sys.maxint
+    margin = sys.maxsize
     for line in lines[1:]:
         content = len(line.lstrip())
         if content:
@@ -945,7 +965,7 @@ def unindent_docstring(docstring):
     # Remove indentation.
     if lines:
         lines[0] = lines[0].lstrip()
-    if margin < sys.maxint:
+    if margin < sys.maxsize:
         for i in range(1, len(lines)): lines[i] = lines[i][margin:]
     # Remove any trailing (but not leading!) blank lines.
     while lines and not lines[-1]:
@@ -953,7 +973,7 @@ def unindent_docstring(docstring):
     #while lines and not lines[0]:
     #    lines.pop(0)
     return '\n'.join(lines)
-                           
+
 _IDENTIFIER_LIST_REGEXP = re.compile(r'^[\w.\*]+([\s,:;]\s*[\w.\*]+)*$')
 def _descr_to_identifiers(descr):
     """
@@ -964,7 +984,7 @@ def _descr_to_identifiers(descr):
     converted to plaintext, and then split.  The plaintext content of
     the docstring must be a a list of identifiers, separated by
     spaces, commas, colons, or semicolons.
-    
+
     @rtype: C{list} of C{string}
     @return: A list of the identifier names contained in C{descr}.
     @type descr: L{markup.ParsedDocstring}
@@ -976,16 +996,16 @@ def _descr_to_identifiers(descr):
     idents = descr.to_plaintext(None).strip()
     idents = re.sub(r'\s+', ' ', idents)
     if not _IDENTIFIER_LIST_REGEXP.match(idents):
-        raise ValueError, 'Bad Identifier list: %r' % idents
+        raise ValueError('Bad Identifier list: %r' % idents)
     rval = re.split('[:;, ] *', idents)
     return rval
-    
+
 def _descr_to_docstring_field(arg, descr):
     tags = [s.lower() for s in re.split('[:;, ] *', arg)]
     descr = descr.to_plaintext(None).strip()
     args = re.split('[:;,] *', descr)
     if len(args) == 0 or len(args) > 3:
-        raise ValueError, 'Wrong number of arguments'
+        raise ValueError('Wrong number of arguments')
     singular = args[0]
     if len(args) >= 2: plural = args[1]
     else: plural = None
@@ -1014,7 +1034,7 @@ _SIGNATURE_RE = re.compile(
     r'\s*(\n|\s+(--|<=+>)\s+|$|\.\s+|\.\n)')
 """A regular expression that is used to extract signatures from
 docstrings."""
-    
+
 def parse_function_signature(func_doc, doc_source, docformat, parse_errors):
     """
     Construct the signature for a builtin function or method from
@@ -1051,11 +1071,11 @@ def parse_function_signature(func_doc, doc_source, docformat, parse_errors):
 #                     "docstring, since the name doesn't match." %
 #                     func_doc.canonical_name)
 #         return False
-    
+
     params = m.group('params')
     rtype = m.group('return')
     selfparam = m.group('self')
-    
+
     # Extract the parameters from the signature.
     func_doc.posargs = []
     func_doc.vararg = None
@@ -1105,7 +1125,7 @@ def parse_function_signature(func_doc, doc_source, docformat, parse_errors):
 
     # Remove the signature from the docstring.
     doc_source.docstring = doc_source.docstring[m.end():]
-        
+
     # We found a signature.
     return True
 

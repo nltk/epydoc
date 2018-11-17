@@ -67,6 +67,9 @@ API Linking Options::
 .. _Docutils: http://docutils.sourceforge.net/
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 # $Id: xlink.py 1719 2008-02-15 01:00:39Z edloper $
 __version__ = "$Revision: 1719 $"[11:-2]
 __author__ = "Daniele Varrazzo"
@@ -78,6 +81,9 @@ import sys
 from optparse import OptionValueError
 
 from epydoc import log
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 class UrlGenerator:
     """
@@ -247,7 +253,7 @@ class DocUrlGenerator(UrlGenerator):
         """
         self._filename = str(f)
 
-        if isinstance(f, basestring):
+        if isinstance(f, six.string_types):
             f = open(f)
 
         self.load_records(self._iter_tuples(f))
@@ -398,7 +404,7 @@ def create_api_role(name, problematic):
         # Get the resolver from the register and create an url from it.
         try:
             url = api_register[name].get_url(target)
-        except IndexError, exc:
+        except IndexError as exc:
             msg = inliner.reporter.warning(str(exc), line=lineno)
             if problematic:
                 prb = inliner.problematic(rawtext, text, msg)
@@ -505,8 +511,8 @@ class ApiLinkReader(Reader):
                 for name, root in map(split_name, settings.external_api_root):
                     set_api_root(name, root)
 
-        except OptionValueError, exc:
-            print >>sys.stderr, "%s: %s" % (exc.__class__.__name__, exc)
+        except OptionValueError as exc:
+            print("%s: %s" % (exc.__class__.__name__, exc), file=sys.stderr)
             sys.exit(2)
 
     read_configuration = classmethod(read_configuration)

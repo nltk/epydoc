@@ -19,6 +19,9 @@ The L{register_introspecter()} method can be used to extend the
 functionality of C{docintrospector}, by providing methods that handle
 special value types.
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 ######################################################################
@@ -36,10 +39,9 @@ from epydoc import log
 from epydoc.util import *
 # For extracting encoding for docstrings:
 import epydoc.docparser
-# Builtin values
-import __builtin__
-# Backwards compatibility
-from epydoc.compat import * 
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 ######################################################################
 ## Caches
@@ -106,11 +108,11 @@ def introspect_docs(value=None, name=None, filename=None, context=None,
             value = get_value_from_filename(filename, context)
     elif name is None and filename is None:
         # it's ok if value is None -- that's a value, after all.
-        pass 
+        pass
     else:
         raise ValueError("Expected exactly one of the following "
                          "arguments: value, name, filename")
-    
+
     pyid = id(value)
 
     # If we've already introspected this value, then simply return
@@ -137,7 +139,7 @@ def introspect_docs(value=None, name=None, filename=None, context=None,
     # If the file is a script, then adjust its name.
     if is_script and filename is not None:
         val_doc.canonical_name = DottedName(munge_script_name(str(filename)))
-        
+
     if val_doc.canonical_name is UNKNOWN and filename is not None:
         shadowed_name = DottedName(value.__name__)
         log.warning("Module %s is shadowed by a variable with "
@@ -162,7 +164,7 @@ def _get_valuedoc(value):
         val_doc = ValueDoc(pyval=value, canonical_name = canonical_name,
                            docs_extracted_by='introspecter')
         _valuedoc_cache[pyid] = val_doc
-        
+
         # If it's a module, then do some preliminary introspection.
         # Otherwise, check what the containing module is (used e.g.
         # to decide what markup language should be used for docstrings)
@@ -174,7 +176,7 @@ def _get_valuedoc(value):
             module = sys.modules.get(module_name)
             if module is not None and inspect.ismodule(module):
                 val_doc.defining_module = _get_valuedoc(module)
-            
+
     return val_doc
 
 #////////////////////////////////////////////////////////////
@@ -183,9 +185,33 @@ def _get_valuedoc(value):
 
 #: A list of module variables that should not be included in a
 #: module's API documentation.
-UNDOCUMENTED_MODULE_VARS = (
-    '__builtins__', '__doc__', '__all__', '__file__', '__path__',
-    '__name__', '__extra_epydoc_fields__', '__docformat__')
+if six.PY2:
+    UNDOCUMENTED_MODULE_VARS = (
+        '__all__',
+        '__builtins__',
+        '__doc__',
+        '__docformat__',
+        '__extra_epydoc_fields__',
+        '__file__',
+        '__name__',
+        '__package__',
+        '__path__'
+        )
+else:
+    UNDOCUMENTED_MODULE_VARS = (
+        '__all__',
+        '__builtins__',
+        '__cached__',
+        '__doc__',
+        '__docformat__',
+        '__extra_epydoc_fields__',
+        '__file__',
+        '__loader__',
+        '__name__',
+        '__package__',
+        '__path__',
+        '__spec__'
+        )
 
 def introspect_module(module, module_doc, module_name=None, preliminary=False):
     """
@@ -196,11 +222,11 @@ def introspect_module(module, module_doc, module_name=None, preliminary=False):
 
     # Record the module's docformat
     if hasattr(module, '__docformat__'):
-        module_doc.docformat = unicode(module.__docformat__)
-                                  
+        module_doc.docformat = six.text_type(module.__docformat__)
+
     # Record the module's filename
     if hasattr(module, '__file__'):
-        try: module_doc.filename = unicode(module.__file__)
+        try: module_doc.filename = six.text_type(module.__file__)
         except KeyboardInterrupt: raise
         except: pass
         if module_doc.filename is not UNKNOWN:
@@ -222,7 +248,7 @@ def introspect_module(module, module_doc, module_name=None, preliminary=False):
     # package; so set is_package=True and record its __path__.
     if hasattr(module, '__path__'):
         module_doc.is_package = True
-        try: module_doc.path = [unicode(p) for p in module.__path__]
+        try: module_doc.path = [six.text_type(p) for p in module.__path__]
         except KeyboardInterrupt: raise
         except: pass
     else:
@@ -233,7 +259,7 @@ def introspect_module(module, module_doc, module_name=None, preliminary=False):
     if dotted_name is UNKNOWN:
         dotted_name = DottedName(module.__name__)
     name_without_primes = DottedName(str(dotted_name).replace("'", ""))
-        
+
     # Record the module's parent package, if it has one.
     if len(dotted_name) > 1:
         package_name = str(dotted_name.container())
@@ -344,7 +370,8 @@ def introspect_class(cls, class_doc, module_name=None):
         except: pass
 
     # Record the class's metaclass
-    class_doc.metaclass = introspect_docs(type(cls))
+    if isclass(type(cls)):
+        class_doc.metaclass = introspect_docs(type(cls))
 
     # Start a list of subclasses.
     class_doc.subclasses = []
@@ -362,7 +389,7 @@ def introspect_class(cls, class_doc, module_name=None):
     # this helps is PyQt -- subclasses of QWidget get about 300
     # methods injected into them.
     base_children = {}
-    
+
     # Record the class's base classes; and add the class to its
     # base class's subclass lists.
     if hasattr(cls, '__bases__'):
@@ -378,7 +405,7 @@ def introspect_class(cls, class_doc, module_name=None):
                 basedoc = introspect_docs(base)
                 class_doc.bases.append(basedoc)
                 basedoc.subclasses.append(class_doc)
-            
+
             bases.reverse()
             for base in bases:
                 if hasattr(base, '__dict__'):
@@ -388,7 +415,7 @@ def introspect_class(cls, class_doc, module_name=None):
     # as another class base.
     if module_name is None and class_doc.defining_module not in (None, UNKNOWN):
         module_name = class_doc.defining_module.canonical_name
-        
+
     # Record the class's local variables.
     class_doc.variables = {}
     if hasattr(cls, '__dict__'):
@@ -420,14 +447,14 @@ def introspect_routine(routine, routine_doc, module_name=None):
     """Add API documentation information about the function
     C{routine} to C{routine_doc} (specializing it to C{Routine_doc})."""
     routine_doc.specialize_to(RoutineDoc)
-    
+
     # Extract the underying function
     if isinstance(routine, MethodType):
-        func = routine.im_func
+        func = six.get_method_function(routine)
     elif isinstance(routine, staticmethod):
         func = routine.__get__(0)
     elif isinstance(routine, classmethod):
-        func = routine.__get__(0).im_func
+        func = six.get_method_function(routine.__get__(0))
     else:
         func = routine
 
@@ -452,13 +479,16 @@ def introspect_routine(routine, routine_doc, module_name=None):
                 routine_doc.posarg_defaults[i+offset] = default_val
 
         # If it's a bound method, then strip off the first argument.
-        if isinstance(routine, MethodType) and routine.im_self is not None:
+        if isinstance(routine, MethodType) and \
+           six.get_method_function(routine) is not None:
             routine_doc.posargs = routine_doc.posargs[1:]
             routine_doc.posarg_defaults = routine_doc.posarg_defaults[1:]
 
         # Set the routine's line number.
-        if hasattr(func, 'func_code'):
-            routine_doc.lineno = func.func_code.co_firstlineno
+        try:
+            routine_doc.lineno = six.get_function_code(func).co_firstlineno
+        except AttributeError:
+            pass
 
     else:
         # [XX] I should probably use UNKNOWN here??
@@ -475,7 +505,7 @@ def introspect_routine(routine, routine_doc, module_name=None):
         routine_doc.specialize_to(StaticMethodDoc)
     if isinstance(routine, classmethod):
         routine_doc.specialize_to(ClassMethodDoc)
-        
+
     return routine_doc
 
 #////////////////////////////////////////////////////////////
@@ -495,7 +525,7 @@ def introspect_property(prop, prop_doc, module_name=None):
         prop_doc.fget = introspect_docs(prop.fget)
         prop_doc.fset = introspect_docs(prop.fset)
         prop_doc.fdel = introspect_docs(prop.fdel)
-    
+
     return prop_doc
 
 #////////////////////////////////////////////////////////////
@@ -521,9 +551,10 @@ def isclass(object):
     C{__bases__} attribute, including objects that define
     C{__getattr__} to always return a value).
     """
-    return isinstance(object, tuple(_CLASS_TYPES))
+    return isinstance(object, tuple(_CLASS_TYPES)) and \
+           object not in six.class_types
 
-_CLASS_TYPES = set([TypeType, ClassType])
+_CLASS_TYPES = set(six.class_types)
 """A list of types that should be treated as classes."""
 
 def register_class_type(typ):
@@ -566,10 +597,10 @@ def get_docstring(value, module_name=None):
     docstring = getattr(value, '__doc__', None)
     if docstring is None:
         return None
-    elif isinstance(docstring, unicode):
+    elif isinstance(docstring, six.text_type):
         return docstring
-    elif isinstance(docstring, str):
-        try: return unicode(docstring, 'ascii')
+    elif isinstance(docstring, six.binary_type):
+        try: return six.text_type(docstring, 'ascii')
         except UnicodeDecodeError:
             if module_name is None:
                 module_name = get_containing_module(value)
@@ -578,7 +609,7 @@ def get_docstring(value, module_name=None):
                     module = get_value_from_name(module_name)
                     filename = py_src_filename(module.__file__)
                     encoding = epydoc.docparser.get_module_encoding(filename)
-                    return unicode(docstring, encoding)
+                    return six.text_type(docstring, encoding)
                 except KeyboardInterrupt: raise
                 except Exception: pass
             if hasattr(value, '__name__'): name = value.__name__
@@ -586,7 +617,7 @@ def get_docstring(value, module_name=None):
             log.warning("%s's docstring is not a unicode string, but it "
                         "contains non-ascii data -- treating it as "
                         "latin-1." % name)
-            return unicode(docstring, 'latin-1')
+            return six.text_type(docstring, 'latin-1')
         return None
     elif value is BuiltinMethodType:
         # Don't issue a warning for this special case.
@@ -605,7 +636,7 @@ def get_canonical_name(value, strict=False):
     can find canonical names for: modules; functions; non-nested
     classes; methods of non-nested classes; and some class methods
     of non-nested classes.
-    
+
     @rtype: L{DottedName} or C{UNKNOWN}
     """
     if not hasattr(value, '__name__'): return UNKNOWN
@@ -627,23 +658,24 @@ def get_canonical_name(value, strict=False):
             if hasattr(value, '__file__'):
                 filename = '%s' % value.__str__
                 dotted_name = DottedName(munge_script_name(filename))
-        
+
     elif isclass(value):
-        if value.__module__ == '__builtin__':
+        if value.__module__ in ('__builtin__', 'builtins'):
             dotted_name = DottedName(value.__name__, strict=strict)
         else:
             dotted_name = DottedName(value.__module__, value.__name__,
                                      strict=strict)
-            
-    elif (inspect.ismethod(value) and value.im_self is not None and
-          value.im_class is ClassType and
+
+    elif (inspect.ismethod(value) and
+          six.get_method_self(value) is not None and
+          six.get_method_class(value) is not type and
           not value.__name__.startswith('<')): # class method.
-        class_name = get_canonical_name(value.im_self)
+        class_name = get_canonical_name(six.get_method_self(value))
         if class_name is UNKNOWN: return UNKNOWN
         dotted_name = DottedName(class_name, value.__name__, strict=strict)
     elif (inspect.ismethod(value) and
           not value.__name__.startswith('<')):
-        class_name = get_canonical_name(value.im_class)
+        class_name = get_canonical_name(six.get_method_class(value))
         if class_name is UNKNOWN: return UNKNOWN
         dotted_name = DottedName(class_name, value.__name__, strict=strict)
     elif (isinstance(value, FunctionType) and
@@ -662,7 +694,7 @@ def verify_name(value, dotted_name):
     able to find it with the name we constructed.
     """
     if dotted_name is UNKNOWN: return UNKNOWN
-    if len(dotted_name) == 1 and hasattr(__builtin__, dotted_name[0]):
+    if len(dotted_name) == 1 and hasattr(six.moves.builtins, dotted_name[0]):
         return dotted_name
     named_value = sys.modules.get(dotted_name[0])
     if named_value is None: return UNKNOWN
@@ -678,7 +710,7 @@ def verify_name(value, dotted_name):
 def value_repr(value):
     try:
         s = '%r' % value
-        if isinstance(s, str):
+        if isinstance(s, six.binary_type):
             s = decode_with_backslashreplace(s)
         return s
     except:
@@ -694,11 +726,12 @@ def get_containing_module(value):
         return DottedName(value.__name__)
     elif isclass(value):
         return DottedName(value.__module__)
-    elif (inspect.ismethod(value) and value.im_self is not None and
-          value.im_class is ClassType): # class method.
-        return DottedName(value.im_self.__module__)
+    elif (inspect.ismethod(value) and
+          six.get_method_self(value) is not None and
+          six.get_method_class(value) is not type): # class method.
+        return DottedName(six.get_method_self(value).__module__)
     elif inspect.ismethod(value):
-        return DottedName(value.im_class.__module__)
+        return DottedName(six.get_method_class(value).__module__)
     elif inspect.isroutine(value):
         module = _find_function_module(value)
         if module is None: return None
@@ -758,7 +791,7 @@ def register_introspecter(applicability_test, introspecter, priority=10):
     _introspecter_registry.append( (priority, applicability_test,
                                     introspecter) )
     _introspecter_registry.sort()
-    
+
 def _get_introspecter(value):
     for (priority, applicability_test, introspecter) in _introspecter_registry:
         if applicability_test(value):
@@ -822,7 +855,7 @@ def get_value_from_filename(filename, context=None):
         while is_package_dir(basedir):
             basedir, pkg_name = os.path.split(basedir)
             name = DottedName(pkg_name, name)
-            
+
     # If a parent package was specified, then find the directory of
     # the topmost package, and the fully qualified name for this file.
     if context is not None:
@@ -858,7 +891,7 @@ def get_value_from_scriptname(filename):
 def get_value_from_name(name, globs=None):
     """
     Given a name, return the corresponding value.
-    
+
     @param globs: A namespace to check for the value, if there is no
         module containing the named value.  Defaults to __builtin__.
     """
@@ -868,8 +901,8 @@ def get_value_from_name(name, globs=None):
     # the requested name refers to a builtin.
     try:
         module = _import(name[0])
-    except ImportError, e:
-        if globs is None: globs = __builtin__.__dict__
+    except ImportError as e:
+        if globs is None: globs = six.moves.builtins.__dict__
         if name[0] in globs:
             try: return _lookup(globs[name[0]], name[1:])
             except: raise e
@@ -893,7 +926,7 @@ def _lookup(module, name):
                        (identifier, '.'.join(name[:1+i])))
             raise ImportError(exc_msg)
     return val
-            
+
 def _import(name, filename=None):
     """
     Run the given callable in a 'sandboxed' environment.
@@ -905,7 +938,7 @@ def _import(name, filename=None):
     # explicitly store sys.path.
     old_sys = sys.__dict__.copy()
     old_sys_path = sys.path[:]
-    old_builtins = __builtin__.__dict__.copy()
+    old_builtins = six.moves.builtins.__dict__.copy()
 
     # Add the current directory to sys.path, in case they're trying to
     # import a module by name that resides in the current directory.
@@ -914,7 +947,7 @@ def _import(name, filename=None):
     sys.path.append('')
 
     # Suppress input and output.  (These get restored when we restore
-    # sys to old_sys).  
+    # sys to old_sys).
     sys.stdin = sys.stdout = sys.stderr = _dev_null
     sys.__stdin__ = sys.__stdout__ = sys.__stderr__ = _dev_null
 
@@ -940,12 +973,12 @@ def _import(name, filename=None):
             raise ImportError(estr)
     finally:
         # Restore the important values that we saved.
-        __builtin__.__dict__.clear()
-        __builtin__.__dict__.update(old_builtins)
+        six.moves.builtins.__dict__.clear()
+        six.moves.builtins.__dict__.update(old_builtins)
         sys.__dict__.clear()
         sys.__dict__.update(old_sys)
         sys.path = old_sys_path
-        
+
 def introspect_docstring_lineno(api_doc):
     """
     Try to determine the line number on which the given item's
@@ -988,13 +1021,13 @@ class _DevNull:
     def readline(self, size=0): return ''
     def readlines(self, sizehint=0): return []
     def seek(self, offset, whence=0): pass
-    def tell(self): return 0L
+    def tell(self): return 0
     def truncate(self, size=0): pass
     def write(self, str): pass
     def writelines(self, sequence): pass
     xreadlines = readlines
 _dev_null = _DevNull()
-    
+
 ######################################################################
 ## Zope InterfaceClass
 ######################################################################
@@ -1025,10 +1058,10 @@ try:
     register_introspecter(_is_zope_method, introspect_routine)
 except:
     pass
-                         
 
 
-    
+
+
 # [xx]
 0 # hm..  otherwise the following gets treated as a docstring!  ouch!
 """
@@ -1043,7 +1076,7 @@ class ZopeIntrospecter(Introspecter):
         'interface': ZopeInterfaceDoc,
         'attribute': ZopeAttributeDoc,
         })
-    
+
     def add_module_child(self, child, child_name, module_doc):
         if isinstance(child, zope.interfaces.Interface):
             module_doc.add_zope_interface(child_name)
@@ -1058,4 +1091,4 @@ class ZopeIntrospecter(Introspecter):
 
     def introspect_zope_interface(self, interface, interfacename):
         pass # etc...
-"""        
+"""

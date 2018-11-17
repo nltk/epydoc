@@ -9,10 +9,17 @@
 """
 Plaintext output generation.
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 __docformat__ = 'epytext en'
 
 from epydoc.apidoc import *
 import re
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 class PlaintextWriter:
     def write(self, api_doc, **options):
@@ -31,9 +38,9 @@ class PlaintextWriter:
                 self.write_function(out, api_doc)
             else:
                 assert 0, ('%s not handled yet' % api_doc.__class__)
-        except Exception, e:
-            print '\n\n'
-            print ''.join(result)
+        except Exception as e:
+            print('\n\n')
+            print(''.join(result))
             raise
 
         return ''.join(result)
@@ -77,7 +84,7 @@ class PlaintextWriter:
 
     def write_class(self, out, class_doc, name=None, prefix='', verbose=True):
         baselist = self.baselist(class_doc)
-        
+
         # If we're at the top level, then list the cannonical name of
         # the class; otherwise, our parent will have already printed
         # the name of the variable containing the class.
@@ -115,7 +122,7 @@ class PlaintextWriter:
                         value_type='instancevariable', prefix=prefix)
         self.write_list(out, 'Class Variables', class_doc,
                         value_type='classvariable', prefix=prefix)
-        
+
         self.write_list(out, 'Inherited Methods', class_doc,
                         value_type='method', prefix=prefix,
                         inherited=True, verbose=False)
@@ -152,7 +159,7 @@ class PlaintextWriter:
         out(prefix+self.bold(str(name)))
         if not verbose: return
         prefix += '    ' # indent the body.
-            
+
         if prop_doc.descr not in (None, '', UNKNOWN):
             out(self._descr(prop_doc.descr, prefix))
 
@@ -162,9 +169,9 @@ class PlaintextWriter:
         if name is None: name = func_doc.canonical_name
         self.write_signature(out, func_doc, name, prefix)
         if not verbose: return
-        
+
         prefix += '    ' # indent the body.
-            
+
         if func_doc.descr not in (None, '', UNKNOWN):
             out(self._descr(func_doc.descr, prefix))
 
@@ -177,7 +184,7 @@ class PlaintextWriter:
             out(self._descr(func_doc.return_type, prefix+'    '))
 
     def write_signature(self, out, func_doc, name, prefix):
-        args = [self.fmt_arg(argname, default) for (argname, default) 
+        args = [self.fmt_arg(argname, default) for (argname, default)
                 in zip(func_doc.posargs, func_doc.posarg_defaults)]
         if func_doc.vararg: args.append('*'+func_doc.vararg)
         if func_doc.kwarg: args.append('**'+func_doc.kwarg)
@@ -236,7 +243,7 @@ class PlaintextWriter:
                     name = var_doc.canonical_name
                 elif val_doc not in (None, UNKNOWN):
                     name = val_doc.canonical_name
-                    
+
             if isinstance(val_doc, RoutineDoc):
                 self.write_function(out, val_doc, name, prefix, verbose)
             elif isinstance(val_doc, PropertyDoc):
@@ -250,17 +257,17 @@ class PlaintextWriter:
         s = descr.to_plaintext(None, indent=len(prefix)).rstrip()
         s = '\n'.join([(prefix+l[len(prefix):]) for l in s.split('\n')])
         return s+'\n'#+prefix+'\n'
-                               
+
 
 #    def drawline(self, s, x):
 #        s = re.sub(r'(?m)^(.{%s}) ' % x, r'\1|', s)
 #        return re.sub(r'(?m)^( {,%s})$(?=\n)' % x, x*' '+'|', s)
 
-        
+
     #////////////////////////////////////////////////////////////
     # Helpers
     #////////////////////////////////////////////////////////////
-    
+
     def bold(self, text):
         """Write a string in bold by overstriking."""
         return ''.join([ch+'\b'+ch for ch in text])

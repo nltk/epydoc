@@ -46,7 +46,7 @@ installdocs:
 ## the cvs repository (not from distributions).
 ##//////////////////////////////////////////////////////////////////////
 
-# Clean.  
+# Clean.
 #    - Erase any pyc and pyo files.
 #    - Get rid of build/dist directories
 clean:

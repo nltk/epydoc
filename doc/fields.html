@@ -80,16 +80,16 @@ accordingly. </p>
     A description of the parameter <code><i>p</i></code> for a
     function or method.  It may appear in the class docstring to describe
     a costructor parameter: mostly useful for C extensions.</td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>type</b>&nbsp;<i>p</i>:</code>&nbsp;... </td><td>
     The expected type for the parameter.
     <code><i>p</i></code>. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>return</b>:</code>&nbsp;... </td><td>
     The return value for a function or method. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>rtype</b>:</code>&nbsp;... </td><td>
     The type of the return value for a function or method. </td></tr>
@@ -99,7 +99,7 @@ accordingly. </p>
     A description of the keyword parameter <code><i>p</i></code>.
     It may appear in the class docstring to describe
     a costructor keyword parameter.</td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>raise</b>&nbsp;<i>e</i>:</code>&nbsp;... </td><td>
     A description of the circumstances under which a function or
@@ -114,38 +114,38 @@ accordingly. </p>
   <code>@<b>ivar</b>&nbsp;<i>v</i>:</code>&nbsp;... </td><td>
     A description of the class instance variable
     <code><i>v</i></code>. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>cvar</b>&nbsp;<i>v</i>:</code>&nbsp;... </td><td>
     A description of the static class variable
     <code><i>v</i></code>. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>var</b>&nbsp;<i>v</i>:</code>&nbsp;... </td><td>
     A description of the module variable
     <code><i>v</i></code>. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>type</b>&nbsp;<i>v</i>:</code>&nbsp;... </td><td>
     The type of the variable
     <code><i>v</i></code>. </td></tr>
 
     <!-- This does exist, but leave it out to avoid confusion: -->
-    <!-- 
+    <!--
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>type</b>&nbsp;<i>p</i>:</code>&nbsp;... </td><td>
     The type of the property
     <code><i>p</i></code>. </td></tr>
     -->
-  
+
   <!-- ========== Properties ========== -->
   <tr><th colspan="2" align="left">Properties
   <i>(property docstrings)</i></th></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>type</b>:</code>&nbsp;... </td><td>
     The type of the property. </td></tr>
-  
+
   <!-- ========== Grouping & Sorting ========== -->
   <tr><th colspan="2" align="left">Grouping and Sorting
   <i>(module, class, function, or method docstrings)</i></th></tr>
@@ -157,7 +157,7 @@ accordingly. </p>
     <code><i>c<sub>1</sub>,...,c<sub>n</sub></i></code> are the names
     of the children in the group.  To define multiple groups, use
     multiple <code>group</code> fields.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>sort</b>:&nbsp;<i>c<sub>1</sub
     >,...,c<sub>n</sub></i></code> </td><td>
@@ -167,36 +167,36 @@ accordingly. </p>
     children that are not included in this list will appear after
     the children from this list, in alphabetical order.
     </td></tr>
-        
+
   <!-- ========== Related Topics ========== -->
   <tr><th colspan="2" align="left">Related Topics</th></tr>
   <tr><td width="10%" align="left" valign="top"> <code>@<b>see</b>:</code>&nbsp;... </td><td>
     A description of a related topic.  <code>see</code> fields
     typically use documentation crossreference links or external
     hyperlinks that link to the related topic. </td></tr>
-    
+
   <!-- ========== Notes & Warnings ========== -->
   <tr><th colspan="2" align="left">Notes and Warnings</th></tr>
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>note</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>note</b>:</code>&nbsp;... </td><td>
     A note about an object.  Multiple
     <code>note</code> fields may be used to list separate
     notes.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>attention</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>attention</b>:</code>&nbsp;... </td><td>
     An important note about an object.  Multiple
     <code>attention</code> fields may be used to list separate
     notes.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>bug</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>bug</b>:</code>&nbsp;... </td><td>
     A description of a bug in an object.
     Multiple <code>bug</code> fields may be used to report separate
     bugs.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>warning</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>warning</b>:</code>&nbsp;... </td><td>
     A warning about an object.  Multiple
     <code>warning</code> fields may be used to report separate
     warnings.</td></tr>
@@ -215,52 +215,52 @@ accordingly. </p>
   changes are planned. </td></tr>
 
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>deprecated</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>deprecated</b>:</code>&nbsp;... </td><td>
     Indicates that an object is
     deprecated.  The body of the field describe the reason why
     the object is deprecated.</td></tr>
 
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>since</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>since</b>:</code>&nbsp;... </td><td>
     The date or version when an object was
     first introduced.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>status</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>status</b>:</code>&nbsp;... </td><td>
     The current status of an object.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>change</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>change</b>:</code>&nbsp;... </td><td>
     A change log entry for this object.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>permission</b>:</code>&nbsp;... </td><td>
     The object access permission, for systems such Zope/Plone supporting
     this concept. It may be used more than once to specify multiple
     permissions.</td></tr>
-    
+
   <!-- ========== Formal Conditions ========== -->
   <tr><th colspan="2" align="left">Formal Conditions</th></tr>
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>requires</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>requires</b>:</code>&nbsp;... </td><td>
     A requirement for using an object.  Multiple <code>requires</code>
     fields may be used if an object has multiple
     requirements.</td></tr>
-    
+
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>precondition</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>precondition</b>:</code>&nbsp;... </td><td>
     A condition that must be true before an object is used.  Multiple
     <code>precondition</code> fields may be used if an object has
     multiple preconditions.</td></tr>
 
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>postcondition</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>postcondition</b>:</code>&nbsp;... </td><td>
     A condition that is guaranteed to be true after an object is used.
     Multiple <code>postcondition</code> fields may be used if an
     object has multiple postconditions.</td></tr>
 
   <tr><td width="10%" align="left" valign="top">
-  <code>@<b>invariant</b>:</code>&nbsp;... </td><td> 
+  <code>@<b>invariant</b>:</code>&nbsp;... </td><td>
     A condition which should always be true for an object.  Multiple
     <code>invariant</code> fields may be used if an object has
     multiple invariants.</td></tr>
@@ -271,20 +271,20 @@ accordingly. </p>
   <code>@<b>author</b>:</code>&nbsp;... </td><td> The author(s) of an
     object.  Multiple <code>author</code>
     fields may be used if an object has multiple authors.</td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>organization</b>:</code>&nbsp;... </td><td> The
     organization that created or maintains an
     object. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>copyright</b>:</code>&nbsp;... </td><td> The copyright
       information for an object. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>license</b>:</code>&nbsp;... </td><td> The licensing
     information for an object. </td></tr>
-  
+
   <tr><td width="10%" align="left" valign="top">
   <code>@<b>contact</b>:</code>&nbsp;... </td><td> Contact information
     for the author or maintainer of a module, class, function, or
@@ -298,7 +298,7 @@ accordingly. </p>
   description for an object.  This description overrides the default
   summary (which is constructed from the first sentence of the
   object's description). </td></tr>
-  
+
 </table>
 
 <h3> 2.1. Notes on Supported Fields</h3>
@@ -451,34 +451,34 @@ adjust the markup accordingly. </p>
       <td><code>@parameter&nbsp;<i>p</i>:</code>&nbsp;...<br/>
       <code>@arg&nbsp;<i>p</i>:</code>&nbsp;...<br/>
       <code>@argument&nbsp;<i>p</i>:</code>&nbsp;...</td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@return:</code>&nbsp;...</b> </td><td>
       <code>@returns:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@rtype:</code>&nbsp;...</b> </td><td>
       <code>@returntype:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@raise&nbsp;<i>e</i>:</code>&nbsp;...</b> </td>
       <td><code>@raises&nbsp;<i>e</i>:</code>&nbsp;...<br/>
       <code>@except&nbsp;<i>e</i>:</code>&nbsp;...<br/>
       <code>@exception&nbsp;<i>e</i>:</code>&nbsp;...</td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@keyword&nbsp;<i>p</i>:</code>&nbsp;...</b> </td><td>
       <code>@kwarg&nbsp;<i>p</i>:</code>&nbsp;... <br/>
       <code>@kwparam&nbsp;<i>p</i>:</code>&nbsp;... <br/></td></tr>
-      
+
     <tr><td align="left" valign="top">
       <b><code>@ivar&nbsp;<i>v</i>:</code>&nbsp;...</b> </td><td>
       <code>@ivariable&nbsp;<i>v</i>:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@cvar&nbsp;<i>v</i>:</code>&nbsp;...</b> </td><td>
       <code>@cvariable&nbsp;<i>v</i>:</code>&nbsp;... </td></tr>
-    
+
   </table></td>
   <td width="20" class="transparent"></td>
   <td class="transparent">
@@ -487,36 +487,36 @@ adjust the markup accordingly. </p>
     <tr><td align="left" valign="top">
       <b><code>@var&nbsp;<i>v</i>:</code>&nbsp;...</b> </td><td>
       <code>@variable&nbsp;<i>v</i>:</code>&nbsp;... </td></tr>
-  
+
     <tr><td align="left" valign="top">
       <b><code>@see:</code>&nbsp;...</b> </td><td>
       <code>@seealso:</code>&nbsp;... </td></tr>
-  
+
     <tr><td align="left" valign="top">
       <b><code>@warning:</code>&nbsp;...</b> </td><td>
       <code>@warn:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@requires:</code>&nbsp;...</b> </td><td>
       <code>@require:</code>&nbsp;... <br/>
       <code>@requirement:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@precondition:</code>&nbsp;...</b> </td><td>
       <code>@precond:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@postcondition:</code>&nbsp;...</b> </td><td>
       <code>@postcod:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@organization:</code>&nbsp;...</b> </td><td>
       <code>@org:</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@copyright:</code>&nbsp;...</b> </td><td>
       <code>@(c):</code>&nbsp;... </td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@change:</code>&nbsp;...</b> </td><td>
       <code>@changed:</code>&nbsp;... </td></tr>
@@ -540,29 +540,29 @@ in <a href="newfield">Adding New Fields</a>.</p>
     <tr><td align="left" valign="top">
       <b><code>@deprecated</code></b></td>
       <td><code>__deprecated__</code></td></tr>
-      
+
     <tr><td align="left" valign="top">
       <b><code>@version</code></b></td>
       <td><code>__version__</code></td></tr>
-    
+
     <tr><td align="left" valign="top">
       <b><code>@date</code></b></td>
       <td><code>__date__</code></td></tr>
-      
+
     <tr><td align="left" valign="top">
       <b><code>@author</code></b><br/>
       <b><code>@authors</code></b></td>
       <td><code>__author__</code><br/>
       <code>__authors__</code></td></tr>
-      
+
     <tr><td align="left" valign="top">
       <b><code>@contact</code></b></td>
       <td><code>__contact__</code></td></tr>
-      
+
     <tr><td align="left" valign="top">
       <b><code>@copyright</code></b></td>
       <td><code>__copyright__</code></td></tr>
-      
+
     <tr><td align="left" valign="top">
       <b><code>@license</code></b></td>
       <td><code>__license__</code></td></tr>
@@ -764,9 +764,9 @@ be single words. </p>
     <a class="nav" href="epytext.html">
     Epytext</a></td></a>
   <td align="center" width="20%" class="nav">
-    
-    <A href="http://sourceforge.net/projects/epydoc"> 
-    <IMG src="sflogo.png" 
+
+    <A href="http://sourceforge.net/projects/epydoc">
+    <IMG src="sflogo.png"
     width="88" height="26" border="0" alt="SourceForge"
     align="top"/></A></td>
     </tr>

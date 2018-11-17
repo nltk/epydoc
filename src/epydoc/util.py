@@ -14,9 +14,15 @@ Miscellaneous utility functions that are used by multiple modules.
 @group Text processing: wordwrap, decode_with_backslashreplace,
     plaintext_to_html
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 import os, os.path, re, sys
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 ######################################################################
 ## Python Source Types
@@ -27,7 +33,7 @@ PY_BIN_EXTENSIONS = ['.pyc', '.so', '.pyd']
 
 def is_module_file(path):
     # Make sure it's a file name.
-    if not isinstance(path, basestring):
+    if not isinstance(path, six.string_types):
         return False
     (dir, filename) = os.path.split(path)
     (basename, extension) = os.path.splitext(filename)
@@ -36,10 +42,10 @@ def is_module_file(path):
             extension in PY_SRC_EXTENSIONS+PY_BIN_EXTENSIONS)
 
 def is_src_filename(filename):
-    if not isinstance(filename, basestring): return False
+    if not isinstance(filename, six.string_types): return False
     if not os.path.exists(filename): return False
     return os.path.splitext(filename)[1] in PY_SRC_EXTENSIONS
-    
+
 def is_package_dir(dirname):
     """
     Return true if the given directory is a valid package directory
@@ -47,7 +53,7 @@ def is_package_dir(dirname):
     and its name is a valid identifier).
     """
     # Make sure it's a directory name.
-    if not isinstance(dirname, basestring):
+    if not isinstance(dirname, six.string_types):
         return False
     if not os.path.isdir(dirname):
         return False
@@ -56,12 +62,12 @@ def is_package_dir(dirname):
     # "foo/", where os.path.split -> ("foo", "").)
     (parent, dir) = os.path.split(dirname)
     if dir == '': (parent, dir) = os.path.split(parent)
-    
+
     # The following constraint was removed because of sourceforge
     # bug #1787028 -- in some cases (eg eggs), it's too strict.
     #if not re.match('\w+$', dir):
     #    return False
-    
+
     for name in os.listdir(dirname):
         filename = os.path.join(dirname, name)
         if name.startswith('__init__.') and is_module_file(filename):
@@ -105,7 +111,7 @@ def decode_with_backslashreplace(s):
     """
     # s.encode('string-escape') is not appropriate here, since it
     # also adds backslashes to some ascii chars (eg \ and ').
-    assert isinstance(s, str)
+    assert isinstance(s, six.binary_type)
     return (s
             .decode('latin1')
             .encode('ascii', 'backslashreplace')
@@ -165,7 +171,7 @@ def plaintext_to_html(s):
     s = s.replace('&', '&amp;').replace('"', '&quot;')
     s = s.replace('<', '&lt;').replace('>', '&gt;')
     return s
-        
+
 def plaintext_to_latex(str, nbsp=0, breakany=0):
     """
     @return: A LaTeX string that encodes the given plaintext string.
@@ -203,7 +209,7 @@ def plaintext_to_latex(str, nbsp=0, breakany=0):
 
     # Convert \1's to hyphenation points.
     if breakany: str = str.replace('\1', r'\-')
-    
+
     return str
 
 class RunSubprocessError(OSError):
@@ -215,7 +221,7 @@ class RunSubprocessError(OSError):
 def run_subprocess(cmd, data=None):
     """
     Execute the command C{cmd} in a subprocess.
-    
+
     @param cmd: The command to execute, specified as a list
         of string.
     @param data: A string containing data to send to the
@@ -224,7 +230,7 @@ def run_subprocess(cmd, data=None):
     @raise OSError: If there is any problem executing the
         command, or if its exitval is not 0.
     """
-    if isinstance(cmd, basestring):
+    if isinstance(cmd, six.string_types):
         cmd = cmd.split()
 
     # Under Python 2.4+, use subprocess
@@ -276,7 +282,7 @@ def run_subprocess(cmd, data=None):
             try:
                 to_child.write(data)
             # Guard for a broken pipe error
-            except IOError, e:
+            except IOError as e:
                 raise OSError(e)
         to_child.close()
         out = from_child.read()
@@ -312,9 +318,9 @@ class TerminalController:
     UNDERLINE = ''       #: Underline the text
     REVERSE = ''         #: Reverse the foreground & background
     BLACK = BLUE = GREEN = CYAN = RED = MAGENTA = YELLOW = WHITE = ''
-    
+
     _STRING_CAPABILITIES = """
-    BOL=cr UP=cuu1 DOWN=cud1 LEFT=cub1 RIGHT=cuf1 REVERSE=rev 
+    BOL=cr UP=cuu1 DOWN=cud1 LEFT=cub1 RIGHT=cuf1 REVERSE=rev
     CLEAR_EOL=el BOLD=bold UNDERLINE=smul NORMAL=sgr0""".split()
     _COLORS = """BLACK BLUE GREEN CYAN RED MAGENTA YELLOW WHITE""".split()
     _ANSICOLORS = "BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE".split()
@@ -336,7 +342,7 @@ class TerminalController:
             # simple progress bar.
             self.BOL = '\r'
             self.CLEAR_LINE = '\r' + ' '*self.COLS + '\r'
-            
+
         # Check the terminal type.  If we fail, then assume that the
         # terminal has no capabilities.
         try: curses.setupterm()
@@ -344,7 +350,7 @@ class TerminalController:
 
         # Look up numeric capabilities.
         self.COLS = curses.tigetnum('cols')
-        
+
         # Look up string capabilities.
         for capability in self._STRING_CAPABILITIES:
             (attrib, cap_name) = capability.split('=')
@@ -356,20 +362,32 @@ class TerminalController:
         set_fg = self._tigetstr('setf')
         if set_fg:
             for i,color in zip(range(len(self._COLORS)), self._COLORS):
-                setattr(self, color, curses.tparm(set_fg, i) or '')
+                setattr(self, color, self._tparm(set_fg, i) or '')
         set_fg_ansi = self._tigetstr('setaf')
         if set_fg_ansi:
             for i,color in zip(range(len(self._ANSICOLORS)), self._ANSICOLORS):
-                setattr(self, color, curses.tparm(set_fg_ansi, i) or '')
+                setattr(self, color, self._tparm(set_fg_ansi, i) or '')
 
     def _tigetstr(self, cap_name):
         # String capabilities can include "delays" of the form "$<2>".
         # For any modern terminal, we should be able to just ignore
         # these, so strip them out.
         import curses
-        cap = curses.tigetstr(cap_name) or ''
-        return re.sub(r'\$<\d+>[/*]?', '', cap)
-    
+        cap = curses.tigetstr(cap_name) or six.b('')
+        cap = re.sub(six.b(r'\$<\d+>[/*]?'), six.b(''), cap)
+        if six.binary_type is not str:
+            cap = cap.decode('ascii')
+        return cap
+
+    def _tparm(self, s, *args):
+        import curses
+        if six.binary_type is not str:
+            s = s.encode('ascii')
+        s = curses.tparm(s, *args)
+        if six.binary_type is not str:
+           s = res.decode('ascii')
+        return s
+
     def render(self, template):
         """
         Replace each $-substitutions in the given template string with

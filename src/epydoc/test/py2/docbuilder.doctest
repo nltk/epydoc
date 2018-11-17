@@ -294,15 +294,14 @@ would really be better to use the parsed version.  See SF bug
 current behavior; but should be replaced when we change the behavior.
 
     >>> from epydoc.test.util import buildvaluedoc
-    >>> from epydoc.compat import *
     >>> def print_py_reprs(s):
     ...     value_doc = buildvaluedoc(s)
-    ...     print 'Var  Score  Repr\n'+'-'*50
+    ...     print('Var  Score  Repr\n'+'-'*50)
     ...     for (name, var_doc) in sorted(value_doc.variables.items()):
     ...         if len(name) > 1: continue
     ...         var_repr =  var_doc.value.pyval_repr()
-    ...         print " %s   %4s   %r" % (name, var_repr.score,
-    ...                                  var_repr.to_plaintext(None))
+    ...         print(" %s   %4s   %r" % (name, var_repr.score,
+    ...                                  var_repr.to_plaintext(None)))
 
     >>> print_py_reprs('''
     ...     import re

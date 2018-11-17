@@ -6,6 +6,8 @@ into HTML.  This is used to generated HTML versions of the regression
 files, for the webpage.
 """
 
+from __future__ import absolute_import
+
 # Docutils imports
 from docutils.core import publish_cmdline, default_description
 from docutils.writers.html4css1 import HTMLTranslator, Writer as HTMLWriter
@@ -28,7 +30,7 @@ class CustomizedReader(ApiLinkReader):
         'external_api_file': [ 'epydoc:' + os.path.join(
             os.path.split(__file__)[0], '../../html/api/api-objects.txt') ],
         })
-    
+
 class CustomizedHTMLWriter(HTMLWriter):
     settings_defaults = (HTMLWriter.settings_defaults or {}).copy()
     settings_defaults.update({
@@ -38,7 +40,7 @@ class CustomizedHTMLWriter(HTMLWriter):
         'output_encoding_error_handler': 'xmlcharrefreplace',
         'embed_stylesheet': False,
         })
-        
+
     def __init__(self):
         HTMLWriter.__init__(self)
         self.translator_class = CustomizedHTMLTranslator

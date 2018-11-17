@@ -19,8 +19,8 @@ Javadoc tag:
     C{M{arg}} is an optional argument.  (For fields that take
     arguments, Javadoc assumes that the single word immediately
     following the tag is an argument; multi-word arguments cannot be
-    used with javadoc.)  
-  
+    used with javadoc.)
+
   - X{inline Javadoc tags} are used for inline markup.  In particular,
     epydoc uses them for crossreference links between documentation.
     Inline tags may appear anywhere in the text, and have the form
@@ -40,6 +40,9 @@ Epydoc supports all Javadoc tags, I{except}:
 
 @warning: Epydoc only supports HTML output for Javadoc docstrings.
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 # Imports
@@ -86,7 +89,7 @@ class ParsedJavadocDocstring(ParsedDocstring):
     def __init__(self, docstring, errors=None):
         """
         Create a new C{ParsedJavadocDocstring}.
-        
+
         @param docstring: The docstring that should be used to
             construct this C{ParsedJavadocDocstring}.
         @type docstring: C{string}
@@ -108,7 +111,7 @@ class ParsedJavadocDocstring(ParsedDocstring):
                    'parameter arg argument raise raises exception '+
                    'except deffield newfield keyword kwarg kwparam').split()
     _FIELD_RE = re.compile(r'(^\s*\@\w+[\s$])', re.MULTILINE)
-    
+
     # Inherit docs from ParsedDocstring.
     def split_fields(self, errors=None):
 
@@ -168,7 +171,7 @@ class ParsedJavadocDocstring(ParsedDocstring):
 
         # This function is used to translate {@link ...}s to HTML.
         translate_xref = docstring_linker.translate_identifier_xref
-        
+
         # Build up the HTML string from the pieces.  For HTML pieces
         # (even), just add it to html.  For link pieces (odd), use
         # docstring_linker to translate the crossreference link to
@@ -232,7 +235,7 @@ class ParsedJavadocDocstring(ParsedDocstring):
             other = doc[m.end():]
             return (ParsedJavadocDocstring(m.group(1)),
                     other != '' and not other.isspace())
-            
+
         else:
             parts = doc.strip('\n').split('\n', 1)
             if len(parts) == 1:
@@ -241,9 +244,9 @@ class ParsedJavadocDocstring(ParsedDocstring):
             else:
                 summary = parts[0] + '...'
                 other = True
-            
+
             return ParsedJavadocDocstring(summary), other
-        
+
 #     def concatenate(self, other):
 #         if not isinstance(other, ParsedJavadocDocstring):
 #             raise ValueError, 'Could not concatenate docstrings'

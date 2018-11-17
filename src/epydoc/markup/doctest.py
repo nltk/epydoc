@@ -15,13 +15,16 @@ do syntac highlighting on doctest blocks with other output formats.
 (Both C{doctest_to_html()} and C{doctest_to_latex()} are defined using
 C{colorize_doctest()}.)
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 import re
 from epydoc.util import plaintext_to_html, plaintext_to_latex
 
 __all__ = ['doctest_to_html', 'doctest_to_latex',
-           'DoctestColorizer', 'XMLDoctestColorizer', 
+           'DoctestColorizer', 'XMLDoctestColorizer',
            'HTMLDoctestColorizer', 'LaTeXDoctestColorizer']
 
 def doctest_to_html(s):
@@ -30,7 +33,7 @@ def doctest_to_html(s):
     return the resulting HTML code.  This code consists of a C{<pre>}
     block with class=py-doctest.  Syntax highlighting is performed
     using the following css classes:
-    
+
       - C{py-prompt} -- the Python PS1 prompt (>>>)
       - C{py-more} -- the Python PS2 prompt (...)
       - C{py-keyword} -- a Python keyword (for, if, etc.)
@@ -48,7 +51,7 @@ def doctest_to_latex(s):
     """
     Perform syntax highlighting on the given doctest string, and
     return the resulting LaTeX code.  This code consists of an
-    C{alltt} environment.  Syntax highlighting is performed using 
+    C{alltt} environment.  Syntax highlighting is performed using
     the following new latex commands, which must be defined externally:
       - C{\pysrcprompt} -- the Python PS1 prompt (>>>)
       - C{\pysrcmore} -- the Python PS2 prompt (...)
@@ -73,7 +76,7 @@ class DoctestColorizer:
         returns a colorized version of the substring.
       - The L{PREFIX} and L{SUFFIX} variables, which will be added
         to the beginning and end of the strings returned by
-        L{colorize_codeblock} and L{colorize_doctest}.  
+        L{colorize_codeblock} and L{colorize_doctest}.
     """
 
     #: A string that is added to the beginning of the strings
@@ -119,7 +122,7 @@ class DoctestColorizer:
 
     #: A regexp group that matches Python ">>>" prompts.
     _PROMPT1_GRP = r'^[ \t]*>>>(?:[ \t]|$)'
-    
+
     #: A regexp group that matches Python "..." prompts.
     _PROMPT2_GRP = r'^[ \t]*\.\.\.(?:[ \t]|$)'
 
@@ -209,16 +212,16 @@ class DoctestColorizer:
             charno = m.end()
         # Add any remaining post-example text.
         output.append(self.NEWLINE.join(s[charno:].split('\n')))
-        
+
         return self.PREFIX + ''.join(output) + self.SUFFIX
-    
+
     def subfunc(self, match):
         other, text = match.group(1, 2)
-        #print 'M %20r %20r' % (other, text) # <- for debugging
+        #print('M %20r %20r' % (other, text)) # <- for debugging
         if other:
             other = self.NEWLINE.join([self.markup(line, 'other')
                                        for line in other.split('\n')])
-            
+
         if match.group('PROMPT1'):
             return other + self.markup(text, 'prompt')
         elif match.group('PROMPT2'):
@@ -263,7 +266,7 @@ class DoctestColorizer:
         block.  C{s} is the substring, and C{tag} is the tag that
         should be applied to the substring.  C{tag} will be one of the
         following strings:
-        
+
           - C{prompt} -- the Python PS1 prompt (>>>)
           - C{more} -- the Python PS2 prompt (...)
           - C{keyword} -- a Python keyword (for, if, etc.)
@@ -312,4 +315,4 @@ class LaTeXDoctestColorizer(DoctestColorizer):
         else:
             return '\\pysrc%s{%s}' % (tag, plaintext_to_latex(s))
 
-        
+

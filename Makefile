@@ -8,18 +8,19 @@
 ## Configuration variables
 ##//////////////////////////////////////////////////////////////////////
 
+# What version of python to use?
+PYTHON = python2.7 # 2018-11-17: python2.7 is the oldest version available
+export PYTHONPATH=src
+
 # Python source files (don't include src/epydoc/test?)
-PY_SRC = src/epydoc/
-PY_SRCFILES = $(shell find $(PY_SRC) -name '*.py')
+PY_SRC = src/epydoc
+PY_SRCFILES = $(shell find $(PY_SRC)/ -name '*.py')
 EXAMPLES_SRC = $(wildcard doc/*.py)
 DOCDIR = doc
 DOCS = $(wildcard $(DOCDIR)/*)
-DOCTESTS = $(wildcard src/epydoc/test/*.doctest)
+PYX = $(shell $(PYTHON) -c 'import sys; print("py%d" % sys.version_info[0])')
+DOCTESTS = $(wildcard $(PY_SRC)/test/*.doctest $(PY_SRC)/test/$(PYX)/*.doctest)
 MANUAL_SRC = $(wildcard doc/manual-*.txt)
-
-# What version of python to use?
-PYTHON = python2.5
-export PYTHONPATH=src/
 
 # The location of the webpage.
 HOST = shell.sf.net
@@ -49,7 +50,7 @@ MKDISPATCH = $(PYTHON) src/tools/mkdispatch.py
 STY2HTML = $(PYTHON) src/tools/sty2html.py
 
 DOCTEST_HTML_FILES := \
-    $(DOCTESTS:src/epydoc/test/%.doctest=$(HTML_DOCTEST)/%.html)
+    $(DOCTESTS:$(PY_SRC)/test/%.doctest=$(HTML_DOCTEST)/%.html)
 
 MANUAL_HTML_FILES := $(HTML_MANUAL)/epydoc.html \
     $(MANUAL_SRC:doc/manual-%.txt=$(HTML_MANUAL)/manual-%.html)
@@ -122,7 +123,7 @@ $(HTML_MANUAL)/manual-%.html: doc/manual-%.txt doc/epydoc-style-list.txt
 
 checkdoc: checkdocs
 checkdocs:
-	epydoc --check --tests=vars,types $(PY_SRC)
+	$(EPYDOC) --check --tests=vars,types $(PY_SRC)/
 
 .webpage.up2date: .api-html.up2date .examples.up2date .api-pdf.up2date \
 		$(DOCTEST_HTML_FILES) doc/epydoc-man.html \
@@ -150,7 +151,7 @@ api-html: .api-html.up2date
 	       --url http://epydoc.sourceforge.net --pstat profile.out \
 	       --inheritance=listed --navlink "epydoc $(VERSION)"\
 	       --include-log \
-	       --docformat plaintext -v --graph all --debug $(PY_SRC)
+	       --docformat plaintext -v --graph all --debug $(PY_SRC)/
 	touch .api-html.up2date
 
 api-pdf: .api-pdf.up2date
@@ -159,12 +160,12 @@ api-pdf: .api-pdf.up2date
 	rm -f $(LATEX_API)
 	$(EPYDOC) --pdf -o $(LATEX_API) --docformat plaintext \
 	       --no-submodule-list --graph classtree --sty shaded \
-	       --name "Epydoc $(VERSION)" $(PY_SRC) -v --debug
+	       --name "Epydoc $(VERSION)" $(PY_SRC)/ -v --debug
 	touch .api-pdf.up2date
 
 # Convert doctest files to HTML, using rst2html.
 doctest-html: doctest-html-mkdir $(DOCTEST_HTML_FILES)
-doctest-html-mkdir: 
+doctest-html-mkdir:
 	mkdir -p $(HTML_DOCTEST)
 $(HTML_DOCTEST)/%.html: src/epydoc/test/%.doctest
 	mkdir -p $(HTML_DOCTEST)
@@ -234,7 +235,7 @@ profile.out: $(PY_SRCFILES)
 	       --url http://epydoc.sourceforge.net --profile-epydoc \
 	       --inheritance=listed --navlink "epydoc $(VERSION)"\
 	       --include-log \
-	       --docformat plaintext -v --graph all $(PY_SRC)
+	       --docformat plaintext -v --graph all $(PY_SRC)/
 	rm -rf profile.tmp hotshot.out
 
 # Convert builtin latex style files to html

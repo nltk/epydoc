@@ -96,9 +96,9 @@ BASE = r"""
 \else\ifnum\pdfoutput=1\newcommand{\driver}{pdftex}
 \else\newcommand{\driver}{dvips}\fi\fi
 
-\RequirePackage[\driver, pagebackref, 
-    bookmarks=true, bookmarksopen=false, pdfpagemode=UseOutlines, 
-    colorlinks=true, linkcolor=black, anchorcolor=black, citecolor=black, 
+\RequirePackage[\driver, pagebackref,
+    bookmarks=true, bookmarksopen=false, pdfpagemode=UseOutlines,
+    colorlinks=true, linkcolor=black, anchorcolor=black, citecolor=black,
     filecolor=black, menucolor=black, pagecolor=black, urlcolor=UrlColor]
     {hyperref}
 
@@ -190,7 +190,7 @@ BASE = r"""
 \newcommand{\EpydocIndex}[3]{%
     #2 %
     \ifthenelse{\equal{#3}{}}{}{\textit{(#3)}}}
-    
+
 % ======================================================================
 % Descriptions (docstring contents)
 
@@ -264,7 +264,7 @@ BASE = r"""
 % style of that environment.
 \newcommand{\EpydocInheritanceList}[2]{%
     \textbf{Inherited from {#1}:} #2\par}
-    
+
 % ======================================================================
 % Submodule List
 
@@ -289,7 +289,7 @@ BASE = r"""
 % These environments are *only* used if the --list-classes-separately
 % option is used.
 
-% This list environment is used to list the classes that are defined 
+% This list environment is used to list the classes that are defined
 % by a module.
 \newenvironment{EpydocClassList}{%
     \renewcommand{\EpydocGroup}[1]{\item[##1] \
@@ -310,8 +310,8 @@ BASE = r"""
 %     specifying the signature for the function.
 %
 %   - The function's description (from the docstring)
-% 
-%   - The function's parameters: An EpydocFunctionParameters list 
+%
+%   - The function's parameters: An EpydocFunctionParameters list
 %     environment providing descriptions of the function's parameters.
 %     (from the epydoc @param, @arg, @kwarg, @vararg, @type fields)
 %
@@ -373,7 +373,7 @@ BASE = r"""
 %   - \TupleArg: Used inside of the \Param command, to mark
 %     argument tuples.  Individual elements of the argument tuple
 %     are separated by the \and command.
-% 
+%
 % Parameters are separated by the \and command.
 \newenvironment{EpydocFunctionSignature}[1]{%
     \newcommand{\and}{, }%
@@ -387,7 +387,7 @@ BASE = r"""
     \@hangfrom{\textbf{#1}(}%
     }{)}
 
-% The EpydocFunctionParameters environment is used to display 
+% The EpydocFunctionParameters environment is used to display
 % descriptions for the parameters that a function can take.
 % (From epydoc fields: @param, @arg, @kwarg, @vararg, @type)
 \newenvironment{EpydocFunctionParameters}[1]{%
@@ -434,7 +434,7 @@ BASE = r"""
 % The EpydocVariableList environment is used to describe module
 % variables.  It contains one \EpydocVariable command for each
 % variable.  This command takes four required arguments:
-% 
+%
 %   - The variable's name
 %   - The variable's description (from the docstring)
 %   - The variable's type (from the epydoc @type field)
@@ -479,7 +479,7 @@ BASE = r"""
 % The EpydocPropertyList environment is used to describe class
 % properties.  It contains one \EpydocProperty command for each
 % property.  This command takes six required arguments:
-% 
+%
 %   - The property's name
 %   - The property's description (from the docstring)
 %   - The property's type (from the epydoc @type field)
@@ -563,7 +563,7 @@ BASE = r"""
     \end{center}}
 
 % ======================================================================
-% Name Formatting    
+% Name Formatting
 %
 % This section defines the EpydocDottedName command, which is used to
 % display the names of Python objects.
@@ -585,7 +585,7 @@ BASE = r"""
 % in user code, it gets the character code 'other', but when it
 % appears here, it gets the character code 'letter'.
 \def\Epydoc@DottedName#1.#2{%
-  \ifx#2@\relax #1\else 
+  \ifx#2@\relax #1\else
     #1\discretionary{.}{}{.}%
     \expandafter\expandafter\expandafter\Epydoc@DottedName
     \expandafter #2\fi%
@@ -716,11 +716,11 @@ BOXES = r"""
                          @{\hspace \tabcolsep \vrule width \fboxrule}}
     % Set up the headers & footer (this makes the table span
     % multiple pages in a happy way).
-    \hline \hline \rule{0pt}{\baselineskip} 
+    \hline \hline \rule{0pt}{\baselineskip}
     \centering \Large \textbf{Name} &
-    \centering \Large \textbf{Description} 
+    \centering \Large \textbf{Description}
     \tabularnewline
-    \hline \hline 
+    \hline \hline
     \endhead%
     \hline\hline\multicolumn{2}{r}{%
         \small\textit{continued on next page}}\\\endfoot%
@@ -752,7 +752,7 @@ BOXES = r"""
     }
     {\end{@EpydocGeneralList}}
 
-% By default, EpydocClassVariableList & EpydocInstanceVariableList are 
+% By default, EpydocClassVariableList & EpydocInstanceVariableList are
 % just aliases for EpydocVaribleList.
 
 % ======================================================================
@@ -805,7 +805,7 @@ SHADED = r"""
 % This LaTeX stylesheet for epydoc's output uses shaded boxes to
 % display the function, variable, and property lists.  Each
 % object's name (or signature) is displayed in a lightly shaded
-% box, and is immediately followed by a shaded and indented box 
+% box, and is immediately followed by a shaded and indented box
 % containing a description of that object:
 %
 %         +-------------------------------------------+
@@ -828,7 +828,7 @@ SHADED = r"""
 % ======================================================================
 % Customization hooks
 
-% These colors 
+% These colors
 \definecolor{EpydocNameColor}{gray}{0.95}
 \definecolor{EpydocDetailsColor}{gray}{0.90}
 \definecolor{EpydocValueColor}{gray}{0.85}
@@ -847,7 +847,7 @@ SHADED = r"""
 % ======================================================================
 % Colored minipage
 
-% adapted from <http://www.texnik.de/color/color.phtml> for colored 
+% adapted from <http://www.texnik.de/color/color.phtml> for colored
 % paragraph boxes
 \newcommand{\cmcolor}{}
 \newenvironment{cminipage}[2][white]{%
@@ -932,7 +932,7 @@ SHADED = r"""
     \@ifundefined{cmdEpydoc@variable@description}{}{\Epydoc@detailstrue}%
     \@ifundefined{cmdEpydoc@variable@value}{}{\Epydoc@detailstrue}%
     \@ifundefined{cmdEpydoc@variable@type}{}{\Epydoc@detailstrue}%
-    % Put a box around the whole thing, so the variable's name line 
+    % Put a box around the whole thing, so the variable's name line
     % and the body don't get split across pages.
     \begin{minipage}{\linewidth}%
       \setlength{\parskip}{-1pt}\raggedleft%
@@ -973,7 +973,7 @@ SHADED = r"""
     \@ifundefined{cmdEpydoc@property@fget}{}{\Epydoc@detailstrue}%
     \@ifundefined{cmdEpydoc@property@fset}{}{\Epydoc@detailstrue}%
     \@ifundefined{cmdEpydoc@property@fdel}{}{\Epydoc@detailstrue}%
-    % Put a box around the whole thing, so the property's name line 
+    % Put a box around the whole thing, so the property's name line
     % and the body don't get split across pages.
     \begin{minipage}{\linewidth}%
       \setlength{\parskip}{-1pt}\raggedleft%

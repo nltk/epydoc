@@ -4,9 +4,10 @@ Regression Testing for epydoc.cli
 A helper function to check the behavior of parse_arguments:
 
     >>> import sys, epydoc.cli
+    >>> from epydoc.seven import six
     >>> def parse_arguments(argv):
     ...     defaults = epydoc.cli.option_defaults()
-    ...     if isinstance(argv, basestring): argv = argv.split()
+    ...     if isinstance(argv, six.string_types): argv = argv.split()
     ...     sys.argv = list(argv)
     ...     options = epydoc.cli.parse_arguments()
     ...     for opt, val in sorted(options.__dict__.items()):
@@ -14,7 +15,7 @@ A helper function to check the behavior of parse_arguments:
     ...             if isinstance(val, dict):
     ...                 val = '{%s}' % ', '.join(sorted(
     ...                     ['%r: %r' % pair for pair in val.items()]))
-    ...             print '%20s: %s' % (opt, val)
+    ...             print('%20s: %s' % (opt, val))
 
 Basic test:
     >>> parse_arguments('epydoc sys')

@@ -2,7 +2,7 @@
 .\" Epydoc command line interface man page.
 .\" $Id: epydoc.1 1698 2008-01-31 01:09:38Z edloper $
 .\"
-.TH EPYDOC 1 
+.TH EPYDOC 1
 .SH NAME
 epydoc \- generate API documentation from Python docstrings
 .\" ================== SYNOPSIS ====================
@@ -24,7 +24,7 @@ also understands docstrings written in ReStructuredText, Javadoc, and
 plaintext.  Currently, epydoc supports two basic output formats: HTML
 and LaTeX.
 .PP
-The HTML API documentation produced by 
+The HTML API documentation produced by
 .B epydoc
 consists of a set of HTML files, including: an API documentation page
 for each class and module; a syntax-highlighted source code page for
@@ -32,13 +32,13 @@ each module; an identifier index page; a help page; and a frames-based
 table of contents.  When appropriate,
 .B epydoc
 will also generate
-index pages for bugs, defined terms, and to-do items; 
+index pages for bugs, defined terms, and to-do items;
 a class hierarchy page; and a package hierarchy page.
 .PP
 The LaTeX API documentation produced by
 .B epydoc
 consists of a main LaTeX file, and a LaTeX file for each module.  If
-you use 
+you use
 .BR \-\-dvi ,
 .BR \-\-ps ,
 or
@@ -82,7 +82,7 @@ or directory names (such as
 .BR epydoc/ ).
 Directory names specify packages, and are expanded to include
 all sub-modules and sub-packages.  If you wish to exclude
-certain sub-modules or sub-packages, use the 
+certain sub-modules or sub-packages, use the
 .B --exclude
 option (described below).
 .\" --config
@@ -125,7 +125,7 @@ Write DVI output.
 Write Postscript output.
 .TP 10
 .B \-\-pdf
-Write Adobe Acrobat (pdf) output. 
+Write Adobe Acrobat (pdf) output.
 .TP 10
 .B \-\-check
 Perform completeness checks on the documentation.
@@ -178,7 +178,7 @@ expression pattern.
 .TP
 .BI "\-\-exclude-introspect " PATTERN
 Do not use introspection to gather information about any object whose
-name matches the given regular expression.  
+name matches the given regular expression.
 .\" --exclude-parse=PATTERN
 .TP
 .BI "\-\-exclude-parse " PATTERN
@@ -255,7 +255,7 @@ used.
 .\" --name
 .TP
 .BI "\-n " name ", \-\-name " name
-The name of the project whose documentation is being generated.  
+The name of the project whose documentation is being generated.
 .\" --url
 .TP
 .BI "\-u " url ", \-\-url " url
@@ -357,7 +357,7 @@ warnings are encountered (including docstring warnings).
 .RE
 .\" ================== HTML FILES ====================
 .SH HTML FILES
-The HTML API documentation produced by 
+The HTML API documentation produced by
 .B epydoc
 consists of the following files:
 .PP
@@ -378,9 +378,9 @@ documentation page for the top-level package or module (or the trees
 page if there is no top-level package or module).
 .TP
 .IB module \-module.html
-The API documentation for a module.  
+The API documentation for a module.
 .I module
-is the complete dotted name of the module, such as 
+is the complete dotted name of the module, such as
 .B sys
 or
 .BR epydoc.epytext .
@@ -476,7 +476,7 @@ upper\-left frame of
 .BR frames.html ,
 and provides links to the
 .B toc\-everything.html
-and 
+and
 .BI toc\- module \-module.html
 pages.
 .TP
@@ -494,7 +494,7 @@ lower\-left frame of
 and provides links to every class, type, exception, function, and
 variable defined by the module.
 .I module
-is the complete dotted name of the module, such as 
+is the complete dotted name of the module, such as
 .B sys
 or
 .BR epydoc.epytext .
@@ -544,7 +544,7 @@ create a single unified document.
 .TP
 .B api.dvi
 A dvi file containing the complete API documentation.  This file is
-only generated if you use the 
+only generated if you use the
 .B \-\-dvi
 option, the
 .B \-\-ps
@@ -596,7 +596,7 @@ is not well-formed.  Link targets must be valid python identifiers.
 The target specified for an inline uri contruction
 .RB ( "U{...}" )
 is not well-formed.  This typically occurs if inline markup is nested
-inside the URI target.  
+inside the URI target.
 .TP
 .B Fields must be at the top level.
 The list of fields

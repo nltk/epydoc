@@ -41,7 +41,7 @@ page, and an index page.  </p>
     <li> A detailed description of each variable defined by the
     package. </li>
   </ul>
-  
+
   <p>Each <strong>Module Documentation</strong> page contains:</p>
   <ul>
     <li> A description of the module. </li>
@@ -53,7 +53,7 @@ page, and an index page.  </p>
     <li> A detailed description of each variable defined by the
     module. </li>
   </ul>
-  
+
   <p>Each <strong>Class Documentation</strong> page contains: </p>
   <ul>
     <li> A class inheritance diagram. </li>
@@ -62,13 +62,13 @@ page, and an index page.  </p>
     <li> A summary of the methods defined by the class. </li>
     <li> A summary of the instance variables defined by the class. </li>
     <li> A summary of the class (static) variables defined by the
-    class. </li> 
+    class. </li>
     <li> A detailed description of each method defined by the
     class. </li>
     <li> A detailed description of each instance variable defined by the
-    class. </li> 
+    class. </li>
     <li> A detailed description of each class (static) variable defined
-    by the class. </li> 
+    by the class. </li>
   </ul>
 
 <h2> Project Documentation </h2>
@@ -83,7 +83,7 @@ page, and an index page.  </p>
     listed under each base class.  At the top level, and under each base
     class, classes are listed alphabetically. </li>
   </ul>
-  
+
   <p> The <strong>Index</strong> page contains indices of terms and
   identifiers: </p>
   <ul>
@@ -159,7 +159,7 @@ on the navigation bar.  Note that not some labels (such as
   <tr><td valign="top"><strong>[Module]</strong></td>
       <td valign="top">viewing a module</td>
       <td valign="top">the module containing the current object
-      </td></tr> 
+      </td></tr>
   <tr><td valign="top"><strong>[Class]</strong></td>
       <td valign="top">viewing a class </td>
       <td valign="top">the class containing the current object</td></tr>
