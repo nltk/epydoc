@@ -10,6 +10,9 @@
 Parser for plaintext docstrings.  Plaintext docstrings are rendered as
 verbatim output, preserving all whitespace.
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 from epydoc.markup import *
@@ -49,7 +52,7 @@ class ParsedPlaintextDocstring(ParsedDocstring):
             lines = self._text.split('\n')
             return '\n'.join([' '*indent+l for l in lines])+'\n'
         return self._text+'\n'
-    
+
     _SUMMARY_RE = re.compile(r'(\s*[\w\W]*?(?:\.(\s|$)|[\n][\t ]*[\n]))')
 
     def summary(self):
@@ -66,9 +69,9 @@ class ParsedPlaintextDocstring(ParsedDocstring):
             else:
                 summary = parts[0] + '...'
                 other = True
-                
+
             return ParsedPlaintextDocstring(summary, verbatim=0), other
-        
+
 #     def concatenate(self, other):
 #         if not isinstance(other, ParsedPlaintextDocstring):
 #             raise ValueError, 'Could not concatenate docstrings'

@@ -20,7 +20,7 @@ to document, and produce API documentation using the following steps:
 
    * *Introspection* imports the objects, and examines them directly
      using Python's introspection mechanisms.
-  
+
    * *Parsing* reads the Python source files that define the objects,
      and extracts information from those files.
 
@@ -28,23 +28,23 @@ to document, and produce API documentation using the following steps:
 
    * **Merging**: Merge the information obtained from introspection &
      parsing each object into a single structure.
-     
+
    * **Linking**: Replace any \"pointers\" that were created for
      imported variables with the documentation that they point to.
-     
+
    * **Naming**: Assign unique *canonical names* to each of the
      specified objects, and any related objects.
-     
+
    * **Docstrings**: Parse the docstrings of each of the specified
      objects.
-     
+
    * **Inheritance**: Add variables to classes for any values that
      they inherit from their base classes.
 
 3. Generate output.  Output can be generated in a variety of formats:
 
    * An HTML webpage.
-  
+
    * A LaTeX document (which can be rendered as a PDF file)
 
    * A plaintext description.
@@ -56,7 +56,7 @@ to document, and produce API documentation using the following steps:
              side mark what portions of the processing chain are
              initiated by build_doc_index() and cli().  Click on
              any item to see its documentation.
-             
+
    /*
                   Python module or value                 *       *
                       /           \                      |       |
@@ -84,7 +84,7 @@ to document, and produce API documentation using the following steps:
 
    ranksep = 0.1;
    node [shape="box", height="0", width="0"]
-   
+
    { /* Task nodes */
      node [fontcolor=\"#000060\"]
      introspect  [label="Introspect value:\\nintrospect_docs()",

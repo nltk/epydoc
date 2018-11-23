@@ -21,7 +21,7 @@ as the value of attributes when their real value is not (yet) known.
 
     >>> UNKNOWN
     <UNKNOWN>
-    
+
 This object only compares equal to itself:
 
     >>> UNKNOWN == False
@@ -44,7 +44,7 @@ raise an exception.  This helps prevent acidentally interpreting an
 UNKNOWN value as true or false:
 
     >>> if UNKNOWN:
-    ...     print 'ok'
+    ...     print('ok')
     Traceback (most recent call last):
     ValueError: Sentinel value <UNKNOWN> can not be used as a boolean
 
@@ -53,12 +53,12 @@ explicitly compare that value to True or False.  E.g.:
 
     >>> x = UNKNOWN
     >>> if x is True:
-    ...     print 'we know x is true, and not unknown'
+    ...     print('we know x is true, and not unknown')
     >>> if x is not False:
-    ...     print 'x might be true or unknown.'
+    ...     print('x might be true or unknown.')
     x might be true or unknown.
     >>> if x in (True, UNKNOWN):
-    ...     print 'x might be true or unknown.'
+    ...     print('x might be true or unknown.')
     x might be true or unknown.
 
 Dotted Names
@@ -116,7 +116,7 @@ operator:
 As a result, you can iterate over the identifiers in a dotted name:
 
     >>> for ident in name1:
-    ...     print ident
+    ...     print(ident)
     foo
     bar
 
@@ -129,7 +129,7 @@ identifies and they are pairwise equal:
     False
     >>> DottedName('foo.bar') == DottedName('foo.bar.baz')
     False
-    
+
 Dotted names may be combined with the addition operator:
 
     >>> name1 + name2
@@ -149,23 +149,33 @@ last identifier stripped off:
 
 If a dotted name has only one identifier, then its container is None:
 
-    >>> print DottedName('baz').container()
+    >>> print(DottedName('baz').container())
     None
-    >>> print name1.container().container()
+    >>> print(name1.container().container())
     None
 
 It is an error to create an empty dotted name; or a dotted name that
 contains a string that's not a valid python identifier:
 
-    >>> DottedName()
+    >>> DottedName() # doctest: +PYMAX2.7
     Traceback (most recent call last):
     InvalidDottedName: Empty DottedName
-    >>> DottedName('1+2', strict=True)
+    >>> DottedName() # doctest: +PYMIN3.0
+    Traceback (most recent call last):
+    epydoc.apidoc.DottedName.InvalidDottedName: Empty DottedName
+
+    >>> DottedName('1+2', strict=True) # doctest: +PYMAX2.7
     Traceback (most recent call last):
     InvalidDottedName: Bad identifier '1+2'
+
+    >>> DottedName('1+2', strict=True) # doctest: +PYMIN3.0
+    Traceback (most recent call last):
+    epydoc.apidoc.DottedName.InvalidDottedName: Bad identifier '1+2'
+
     >>> DottedName({})
     Traceback (most recent call last):
     TypeError: Bad identifier {}: expected DottedName or str
+
     >>> DottedName('1+2', strict=False)
     Identifier '1+2' looks suspicious; using it anyway.
     DottedName('1+2')
@@ -179,7 +189,7 @@ identifier:
 This is used when we can't find any name for an object (e.g., if
 there's a class that was used as the base class, but is not contained
 in any module or class).
-    
+
 A dotted name can be queried into a context to obtain a reduced version:
 
     >>> DottedName('foo.bar').contextualize(DottedName('foo'))
@@ -192,7 +202,7 @@ A dotted name can be queried into a context to obtain a reduced version:
     DottedName('foo', 'bar')
     >>> DottedName('foo.bar').contextualize(UNKNOWN)
     DottedName('foo', 'bar')
-    
+
 But a contextualization can't reduce to an empty DottedName:
 
     >>> DottedName('foo').contextualize(DottedName('foo'))
@@ -226,9 +236,14 @@ The constructor does not accept positional arguments; and any keyword
 argument that does not correspond to a valid attribute will generate a
 TypeError (but only if epydoc.DEBUG is true):
 
-    >>> APIDoc('foo')
+    >>> APIDoc('foo') # doctest: +PYMAX2.7
     Traceback (most recent call last):
     TypeError: __init__() takes exactly 1 argument (2 given)
+
+    >>> APIDoc('foo') # doctest: +PYMIN3.0
+    Traceback (most recent call last):
+    TypeError: __init__() takes 1 positional argument but 2 were given
+
     >>> APIDoc(foo='foo')
     Traceback (most recent call last):
     TypeError: APIDoc got unexpected arg 'foo'
@@ -247,7 +262,7 @@ display the information that an APIDoc contains:
     >>> val_doc = ValueDoc(pyval=3)
     >>> var_doc = VariableDoc(name='x', value=val_doc)
     >>> class_doc = ClassDoc(bases=(), variables={'x':var_doc})
-    >>> print class_doc.pp()
+    >>> print(class_doc.pp())
     ClassDoc [0]
      +- bases = ()
      +- variables

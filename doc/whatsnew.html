@@ -142,7 +142,7 @@ source</i> link from any documented module, class, or function).
   documentation.  A new API,
   <a href="api/epydoc.docwriter.xlink-module.html"
   ><code>epydoc.docwriter.xlink</code></a>, can be used to determine
-  the correct URL for any object name; and a new redirect page named 
+  the correct URL for any object name; and a new redirect page named
   named "<code>redirect.html"</code> uses javascript to automatically
   redirect the user to the correct URL for any given object name.  See
   the <a href="faq.html#redirect">FAQ</a> for more information.
@@ -175,15 +175,15 @@ source</i> link from any documented module, class, or function).
 
 <h3>New Features</h3>
 <ul>
-  <li> Support for Zope ExtensionClasses 
-  <li> Updated graphical user interface 
-  <li> Added support for modules that define __path__. 
-  <li> New documentation fields: 
-  <ul> 
-    <li> @include: Imports the documentation from another object. 
-    <li> @undocumented: Don't document the given object(s) 
-  </ul> 
-  <li> Various bug fixes 
+  <li> Support for Zope ExtensionClasses
+  <li> Updated graphical user interface
+  <li> Added support for modules that define __path__.
+  <li> New documentation fields:
+  <ul>
+    <li> @include: Imports the documentation from another object.
+    <li> @undocumented: Don't document the given object(s)
+  </ul>
+  <li> Various bug fixes
 </ul>
 </div>
 
@@ -194,69 +194,69 @@ source</i> link from any documented module, class, or function).
 <h3>New Features</h3>
 
 <b>Improvements to Docstring processing</b>
-<ul> 
-  <li> Support for ReStructuredText docstrings.</li> 
-  <li> Support for Javadoc docstrings.</li> 
-  <li> Many new documentation fields for docstrings.</li> 
+<ul>
+  <li> Support for ReStructuredText docstrings.</li>
+  <li> Support for Javadoc docstrings.</li>
+  <li> Many new documentation fields for docstrings.</li>
   <li> More robust crossreference link resolving.</li>
 </ul>
 
-<b>Improvements to Output Generation</b> 
-<ul> 
-  <li> New output formats: LaTeX, DVI, PostScript, and PDF.</li> 
-  <li> Three new formats for displaying inherited methods and variables: listed, grouped, and included.</li> 
-</ul> 
+<b>Improvements to Output Generation</b>
+<ul>
+  <li> New output formats: LaTeX, DVI, PostScript, and PDF.</li>
+  <li> Three new formats for displaying inherited methods and variables: listed, grouped, and included.</li>
+</ul>
 
-<b>Improvements to Inspection</b> <ul> 
-  <li> Support for new Python 2.2+ objects, including class methods, static methods, properties, and metaclasses.</li> 
-  <li> Automatic detection of imported variables.</li> 
-  <li> Documentation inheritance for inherited methods and variables.</li> 
-</ul> 
+<b>Improvements to Inspection</b> <ul>
+  <li> Support for new Python 2.2+ objects, including class methods, static methods, properties, and metaclasses.</li>
+  <li> Automatic detection of imported variables.</li>
+  <li> Documentation inheritance for inherited methods and variables.</li>
+</ul>
 
-<b>Improvements to Efficiency</b> <ul> 
-  <li> Epydoc 2.0 runs 50%-200% faster than epydoc 1.1. (e.g., it runs 160% faster when documenting the Python standard library).</li> 
+<b>Improvements to Efficiency</b> <ul>
+  <li> Epydoc 2.0 runs 50%-200% faster than epydoc 1.1. (e.g., it runs 160% faster when documenting the Python standard library).</li>
 </ul>
 
 <h3>Changes</h3>
 
-<ul> 
-  <li> Support for ReStructuredText docstrings.</li> 
-  <li> Support for Javadoc docstrings.</li> 
-  <li> Many new documentation fields for docstrings.</li> 
-  <li> More robust crossreference link resolving.</li> 
-  <li> New output formats: LaTeX, DVI, PostScript, and PDF.</li> 
-  <li> Three new formats for displaying inherited methods and variables: listed, grouped, and included.</li> 
-  <li> Support for new Python 2.2+ objects, including class methods, static methods, properties, and metaclasses.</li> 
-  <li> Automatic detection of imported variables.</li> 
-  <li> Documentation inheritance for inherited methods and variables.</li> 
-  <li> Epydoc 2.0 runs 50%-200% faster than epydoc 1.1. (e.g., it runs 160% faster when documenting the Python standard library).</li> 
-  <li> The new "markup" package provides a simple interface makes it easy to add support for additional markup languages. </li> 
-  <li> __extra_epydoc_fields__ and @newfield can be used to define new fields. </li> 
-  <li> If the directory for a package is specified, then automatically document all of its contents. </li> 
-  <li> Increased contrast of "blue" and "green" stylesheet </li> 
-  <li> Added --test option, to control what tests are run for --check. </li> 
-  <li> Consolidated error reporting for failed crossreference links and overridden parameter mismatches. </li> 
-  <li> Added --ignore-param-mismatch option, which supresses warnings about parameter mismatches </li> 
-  <li> Fixed bug in path magic for epydoc.py and epydoc.pyw scripts </li> 
-  <li> Replaced __epydoc_sort__ with @sort </li> 
+<ul>
+  <li> Support for ReStructuredText docstrings.</li>
+  <li> Support for Javadoc docstrings.</li>
+  <li> Many new documentation fields for docstrings.</li>
+  <li> More robust crossreference link resolving.</li>
+  <li> New output formats: LaTeX, DVI, PostScript, and PDF.</li>
+  <li> Three new formats for displaying inherited methods and variables: listed, grouped, and included.</li>
+  <li> Support for new Python 2.2+ objects, including class methods, static methods, properties, and metaclasses.</li>
+  <li> Automatic detection of imported variables.</li>
+  <li> Documentation inheritance for inherited methods and variables.</li>
+  <li> Epydoc 2.0 runs 50%-200% faster than epydoc 1.1. (e.g., it runs 160% faster when documenting the Python standard library).</li>
+  <li> The new "markup" package provides a simple interface makes it easy to add support for additional markup languages. </li>
+  <li> __extra_epydoc_fields__ and @newfield can be used to define new fields. </li>
+  <li> If the directory for a package is specified, then automatically document all of its contents. </li>
+  <li> Increased contrast of "blue" and "green" stylesheet </li>
+  <li> Added --test option, to control what tests are run for --check. </li>
+  <li> Consolidated error reporting for failed crossreference links and overridden parameter mismatches. </li>
+  <li> Added --ignore-param-mismatch option, which supresses warnings about parameter mismatches </li>
+  <li> Fixed bug in path magic for epydoc.py and epydoc.pyw scripts </li>
+  <li> Replaced __epydoc_sort__ with @sort </li>
   <li> Changes to epytext:
-  <ul> 
-    <li> Epytext now supports symbols (S{...}) </li> 
-    <li> Epydoc allows multi-word values for field arguments (eg for group names) </li> 
-    <li> Fixeded several minor bugs</li> 
+  <ul>
+    <li> Epytext now supports symbols (S{...}) </li>
+    <li> Epydoc allows multi-word values for field arguments (eg for group names) </li>
+    <li> Fixeded several minor bugs</li>
   </ul>
-  </li> 
+  </li>
   <li> --show-imports now lists imported vars &amp; modules </li>
-  <li> Improvements to error reporting </li> 
-  <li> Improved sorting </li> 
-  <li> Many bug fixes </li> 
-  <li> General code clean-up </li> 
-  <li> Added preliminary and partial implementation for man-style output (like pydoc) </li> 
-  <li> Changed the definition of the --navlink parameter, to allow for more flexible encoding of the homepage link. </li> 
-  <li> Improvements to HTML output. 
-  <ul> 
-    <li> Display variable values in variable summary table </li> 
-    <li> Added tooltips for variable values, that show a more complete value (up to 600 characters) </li> 
+  <li> Improvements to error reporting </li>
+  <li> Improved sorting </li>
+  <li> Many bug fixes </li>
+  <li> General code clean-up </li>
+  <li> Added preliminary and partial implementation for man-style output (like pydoc) </li>
+  <li> Changed the definition of the --navlink parameter, to allow for more flexible encoding of the homepage link. </li>
+  <li> Improvements to HTML output.
+  <ul>
+    <li> Display variable values in variable summary table </li>
+    <li> Added tooltips for variable values, that show a more complete value (up to 600 characters) </li>
     <li> Minor tweaks &amp; improvements </li>
     <li> In the table of contents, only list objects from modules that were explicitly documented (don't list base classes from imported modules, etc)</li>
   </ul>
@@ -290,9 +290,9 @@ Notes</a> on SourceForge.</p>
     <a class="nav" href="epytext.html">
     Epytext</a></td></a>
   <td align="center" width="20%" class="nav">
-    
-    <A href="http://sourceforge.net/projects/epydoc"> 
-    <IMG src="sflogo.png" 
+
+    <A href="http://sourceforge.net/projects/epydoc">
+    <IMG src="sflogo.png"
     width="88" height="26" border="0" alt="SourceForge"
     align="top"/></A></td>
     </tr>

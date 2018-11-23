@@ -20,7 +20,7 @@ Documentation
     Documentation for epydoc, including installation and usage
     instructions, and a complete description of the epytext markup
     language, is available on the epydoc homepage:
- 
+
         <http://epydoc.sourceforge.net/>
 
     This documentation is also available in the doc/ subdirectory of
@@ -53,5 +53,5 @@ Usage
 
 Contributing
 ~~~~~~~~~~~~
-    If you are interested in contributing to epydoc, please email 
+    If you are interested in contributing to epydoc, please email
     <edloper@gradient.cis.upenn.edu>.

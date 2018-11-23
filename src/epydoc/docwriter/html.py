@@ -12,11 +12,14 @@ this module is the L{HTMLWriter} class.
 
 @todo: Add a cache to L{HTMLWriter.url()}?
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 __docformat__ = 'epytext en'
 
 import re, os, sys, codecs, sre_constants, pprint, base64
-import urllib.request, urllib.parse, urllib.error
-import builtins
+import urllib
 from epydoc.apidoc import *
 import epydoc.docstringparser
 import time, epydoc, epydoc.markup, epydoc.markup.epytext
@@ -27,7 +30,9 @@ from epydoc.docwriter.html_help import HTML_HELP
 from epydoc.docwriter.dotgraph import *
 from epydoc import log
 from epydoc.util import plaintext_to_html, is_src_filename
-from epydoc.compat import * # Backwards compatibility
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 ######################################################################
 ## Template Compiler
@@ -120,7 +125,9 @@ def compile_template(docstring, template_string,
                 else:
                     # Variable piece
                     pysrc_lines.append('    '*len(indents)+
-                                 '%s(unicode(%s))' % (output_function, piece))
+                                 '%s(%s(%s))' % (output_function,
+                                                 six.text_type.__name__,
+                                                 piece))
 
         # Python command:
         else:
@@ -133,16 +140,16 @@ def compile_template(docstring, template_string,
             pysrc_lines.append('    '*len(indents)+srcline)
             if srcline.endswith(':'):
                 indents.append(indent)
-        
+
     if debug:
-        pysrc_lines.append('    except Exception,e:')
+        pysrc_lines.append('    except Exception as e:')
         pysrc_lines.append('        pysrc, func_name = __debug ')
         pysrc_lines.append('        lineno = sys.exc_info()[2].tb_lineno')
-        pysrc_lines.append('        print ("Exception in template %s() on "')
-        pysrc_lines.append('               "line %d:" % (func_name, lineno))')
-        pysrc_lines.append('        print pysrc[lineno-1]')
+        pysrc_lines.append('        print("Exception in template %s() on "')
+        pysrc_lines.append('              "line %d:" % (func_name, lineno))')
+        pysrc_lines.append('        print(pysrc[lineno-1])')
         pysrc_lines.append('        raise')
-        
+
     pysrc = '\n'.join(pysrc_lines)+'\n'
     #log.debug(pysrc)
     if debug: localdict = {'__debug': (pysrc_lines, func_name)}
@@ -154,7 +161,7 @@ def compile_template(docstring, template_string,
     template_func = localdict[func_name]
     template_func.__doc__ = docstring
     return template_func
-    
+
 def strip_indent(s):
     """
     Given a multiline string C{s}, find the minimum indentation for
@@ -207,9 +214,9 @@ class HTMLWriter:
         """
         Construct a new HTML writer, using the given documentation
         index.
-        
+
         @param docindex: The documentation index.
-        
+
         @type prj_name: C{string}
         @keyword prj_name: The name of the project.  Defaults to
               none.
@@ -236,7 +243,7 @@ class HTMLWriter:
               name, then the specified file's conents will be used.
               Otherwise, if C{css} is the name of a CSS stylesheet in
               L{epydoc.docwriter.html_css}, then that stylesheet will
-              be used.  Otherwise, an error is reported.  If no stylesheet 
+              be used.  Otherwise, an error is reported.  If no stylesheet
               is specified, then the default stylesheet is used.
         @type help_file: C{string}
         @keyword help_file: The name of the help file.  If no help file is
@@ -303,48 +310,48 @@ class HTMLWriter:
         # Process keyword arguments.
         self._show_private = kwargs.get('show_private', 1)
         """Should private docs be included?"""
-        
+
         self._prj_name = kwargs.get('prj_name', None)
         """The project's name (for the project link in the navbar)"""
-        
+
         self._prj_url = kwargs.get('prj_url', None)
         """URL for the project link in the navbar"""
-        
+
         self._prj_link = kwargs.get('prj_link', None)
         """HTML code for the project link in the navbar"""
-        
+
         self._top_page = kwargs.get('top_page', None)
         """The 'main' page"""
 
         self._css = kwargs.get('css')
         """CSS stylesheet to use"""
-        
+
         self._helpfile = kwargs.get('help_file', None)
         """Filename of file to extract help contents from"""
-        
+
         self._frames_index = kwargs.get('show_frames', 1)
         """Should a frames index be created?"""
-        
+
         self._show_imports = kwargs.get('show_imports', False)
         """Should imports be listed?"""
-        
+
         self._propfunc_linelen = kwargs.get('property_function_linelength', 40)
         """[XXX] Not used!"""
-        
+
         self._variable_maxlines = kwargs.get('variable_maxlines', 8)
         """Max lines for variable values"""
-        
+
         self._variable_linelen = kwargs.get('variable_linelength', 70)
         """Max line length for variable values"""
-        
+
         self._variable_summary_linelen = \
                          kwargs.get('variable_summary_linelength', 65)
         """Max length for variable value summaries"""
-        
+
         self._variable_tooltip_linelen = \
                          kwargs.get('variable_tooltip_linelength', 600)
         """Max length for variable tooltips"""
-        
+
         self._inheritance = kwargs.get('inheritance', 'listed')
         """How should inheritance be displayed?  'listed', 'included',
         or 'grouped'"""
@@ -367,7 +374,7 @@ class HTMLWriter:
         self._src_code_tab_width = kwargs.get('src_code_tab_width', 8)
         """Number of spaces to replace each tab with in source code
         listings."""
-        
+
         self._callgraph_cache = {}
         """Map the callgraph L{uid<DotGraph.uid>} to their HTML
         representation."""
@@ -379,13 +386,13 @@ class HTMLWriter:
         self._show_submodule_list = kwargs.get('show_submodule_list', True)
         """If true, the include a list of submodules on the package
         documentation page."""
-        
+
         # For use with select_variables():
         if self._show_private:
             self._public_filter = None
         else:
             self._public_filter = True
-        
+
         # Make sure inheritance has a sane value.
         if self._inheritance not in ('listed', 'included',
                                      'grouped', 'hidden'):
@@ -406,7 +413,7 @@ class HTMLWriter:
         # Precompute lists & sets of APIDoc objects that we're
         # interested in.
         self.valdocs = valdocs = sorted(docindex.reachable_valdocs(
-            imports=False, packages=False, bases=False, submodules=False, 
+            imports=False, packages=False, bases=False, submodules=False,
             subclasses=False, private=self._show_private))
         self.module_list = [d for d in valdocs if isinstance(d, ModuleDoc)]
         """The list of L{ModuleDoc}s for the documented modules."""
@@ -433,7 +440,7 @@ class HTMLWriter:
             if isinstance(doc, NamespaceDoc):
                 # add any vars with generic values; but don't include
                 # inherited vars.
-                self.indexed_docs += [d for d in list(doc.variables.values()) if
+                self.indexed_docs += [d for d in doc.variables.values() if
                                       isinstance(d.value, GenericValueDoc)
                                       and d.container == doc]
         self.indexed_docs.sort()
@@ -444,7 +451,7 @@ class HTMLWriter:
         # Decide whether or not to split the identifier index.
         self._split_ident_index = (len(self.indexed_docs) >=
                                    self.SPLIT_IDENT_INDEX_SIZE)
-        
+
         # Figure out how many output files there will be (for progress
         # reporting).
         self.modules_with_sourcecode = set()
@@ -460,12 +467,12 @@ class HTMLWriter:
             self._num_files += len(self.modules_with_sourcecode)
         if self._split_ident_index:
             self._num_files += len(self.LETTERS)
-            
+
     def _find_top_page(self, pagename):
         """
         Find the top page for the API documentation.  This page is
         used as the default page shown in the main frame, when frames
-        are used.  When frames are not used, this page is copied to 
+        are used.  When frames are not used, this page is copied to
         C{index.html}.
 
         @param pagename: The name of the page, as specified by the
@@ -503,7 +510,7 @@ class HTMLWriter:
                 return self._trees_url
             elif len(root) == 1:
                 # One item in the root; use that.
-                return self.url(root[0]) 
+                return self.url(root[0])
             else:
                 # Multiple root items; if they're all in one package,
                 # then use that.  Otherwise, use self._trees_url
@@ -514,7 +521,7 @@ class HTMLWriter:
                         return self._trees_url
                 else:
                     return self.url(top)
-    
+
     #////////////////////////////////////////////////////////////
     #{ 1. Interface Methods
     #////////////////////////////////////////////////////////////
@@ -534,7 +541,7 @@ class HTMLWriter:
         """
         # For progress reporting:
         self._files_written = 0.
-        
+
         # Set the default values for ValueDoc formatted representations.
         orig_valdoc_defaults = (ValueDoc.SUMMARY_REPR_LINELEN,
                                 ValueDoc.REPR_LINELEN,
@@ -599,7 +606,7 @@ class HTMLWriter:
                     filename = 'identifier-index.html'
                     self._write(self.write_link_index, directory, filename,
                                 indices, 'Identifier Index', filename,
-                                ident_by_letter, [letter], 
+                                ident_by_letter, [letter],
                                 'identifier-index-%s.html')
                     break
 
@@ -630,25 +637,25 @@ class HTMLWriter:
             self._write(self.write_class_tree, directory, 'class-tree.html')
         else:
             self._files_written += 1 # (skipped)
-        
+
         # Write the help file.
         self._write(self.write_help, directory,'help.html')
-        
+
         # Write the frames-based table of contents.
         if self._frames_index:
             self._write(self.write_frames_index, directory, 'frames.html')
             self._write(self.write_toc, directory, 'toc.html')
             self._write(self.write_project_toc, directory, 'toc-everything.html')
             for doc in self.module_list:
-                filename = 'toc-%s' % urllib.parse.unquote(self.url(doc))
+                filename = 'toc-%s' % six.moves.urllib.parse.unquote(self.url(doc))
                 self._write(self.write_module_toc, directory, filename, doc)
 
         # Write the object documentation.
         for doc in self.module_list:
-            filename = urllib.parse.unquote(self.url(doc))
+            filename = six.moves.urllib.parse.unquote(self.url(doc))
             self._write(self.write_module, directory, filename, doc)
         for doc in self.class_list:
-            filename = urllib.parse.unquote(self.url(doc))
+            filename = six.moves.urllib.parse.unquote(self.url(doc))
             self._write(self.write_class, directory, filename, doc)
 
         # Write source code files.
@@ -662,11 +669,11 @@ class HTMLWriter:
                     name = api_doc.canonical_name[-1]
                     name_to_docs.setdefault(name, []).append(api_doc)
             # Sort each entry of the name_to_docs list.
-            for doc_list in list(name_to_docs.values()):
+            for doc_list in name_to_docs.values():
                 doc_list.sort()
             # Write the source code for each module.
             for doc in self.modules_with_sourcecode:
-                filename = urllib.parse.unquote(self.pysrc_url(doc))
+                filename = six.moves.urllib.parse.unquote(self.pysrc_url(doc))
                 self._write(self.write_sourcecode, directory, filename, doc,
                             name_to_docs)
 
@@ -675,7 +682,7 @@ class HTMLWriter:
 
         # Write the mapping object name -> URL
         self._write(self.write_api_list, directory, 'api-objects.txt')
-        
+
         # Write the index.html files.
         # (this must be done last, since it might copy another file)
         self._files_written += 1
@@ -683,8 +690,8 @@ class HTMLWriter:
         self.write_homepage(directory)
 
         # Don't report references to builtins as missing
-        for k in list(self._failed_xrefs.keys()): # have a copy of keys
-            if hasattr(__builtin__, k):
+        for k in self._failed_xrefs.keys(): # have a copy of keys
+            if hasattr(six.moves.builtins, k):
                 del self._failed_xrefs[k]
 
         # Report any failed crossreferences
@@ -716,7 +723,7 @@ class HTMLWriter:
         # Display our progress.
         self._files_written += 1
         log.progress(self._files_written/self._num_files, filename)
-        
+
         path = os.path.join(directory, filename)
         f = codecs.open(path, 'w', 'ascii', errors='xmlcharrefreplace')
         write_func(f.write, *args)
@@ -731,7 +738,7 @@ class HTMLWriter:
             if os.path.exists(directory):
                 raise OSError('%r is not a directory' % directory)
             os.mkdir(directory)
-        
+
     #////////////////////////////////////////////////////////////
     #{ 2.1. Module Pages
     #////////////////////////////////////////////////////////////
@@ -740,7 +747,7 @@ class HTMLWriter:
         """
         Write an HTML page containing the API documentation for the
         given module to C{out}.
-        
+
         @param doc: A L{ModuleDoc} containing the API documentation
         for the module that should be described.
         """
@@ -762,7 +769,7 @@ class HTMLWriter:
             'DESCRIPTION ==================== -->\n')
         out('<h1 class="epydoc">%s %s</h1>' % (typ, shortname))
         out('<p class="nomargin-top">%s</p>\n' % self.pysrc_link(doc))
-        
+
         # If the module has a description, then list it.
         if doc.descr not in (None, UNKNOWN):
             out(self.descr(doc, 2)+'\n\n')
@@ -801,10 +808,10 @@ class HTMLWriter:
 
     def write_sourcecode(self, out, doc, name_to_docs):
         #t0 = time.time()
-        
+
         filename = doc.filename
         name = str(doc.canonical_name)
-        
+
         # Header
         self.write_header(out, name)
         self.write_navbar(out, doc)
@@ -822,7 +829,7 @@ class HTMLWriter:
         # Footer
         self.write_navbar(out, doc)
         self.write_footer(out)
-        
+
         #log.debug('[%6.2f sec] Wrote pysrc for %s' %
         #          (time.time()-t0, name))
 
@@ -834,7 +841,7 @@ class HTMLWriter:
         """
         Write an HTML page containing the API documentation for the
         given class to C{out}.
-        
+
         @param doc: A L{ClassDoc} containing the API documentation
         for the class that should be described.
         """
@@ -848,7 +855,7 @@ class HTMLWriter:
 
         # Write the name of the class we're describing.
         if (doc.metaclass is not UNKNOWN and
-                doc.metaclass.canonical_name not in (None, UNKNOWN) and 
+                doc.metaclass.canonical_name not in (None, UNKNOWN) and
                 doc.metaclass.canonical_name != 'type'):
             typ = self.href(doc.metaclass, doc.metaclass.canonical_name[-1])
         elif doc.is_type(): typ = 'Type'
@@ -866,7 +873,7 @@ class HTMLWriter:
                 self.write_class_tree_graph(out, doc, uml_class_tree_graph)
             elif 'classtree' in self._graph_types:
                 self.write_class_tree_graph(out, doc, class_tree_graph)
-                
+
             # Otherwise, use ascii-art.
             else:
                 # Write the base class tree.
@@ -889,7 +896,7 @@ class HTMLWriter:
                 out('</dd></dl>\n\n')
 
             out('<hr />\n')
-        
+
         # If the class has a description, then list it.
         if doc.descr not in (None, UNKNOWN):
             out(self.descr(doc, 2)+'\n\n')
@@ -986,8 +993,8 @@ class HTMLWriter:
         the top-level list is a class with no (documented) bases; and
         under each class is listed all of its subclasses.  Note that
         in the case of multiple inheritance, a class may appear
-        multiple times.  
-        
+        multiple times.
+
         @todo: For multiple inheritance, don't repeat subclasses the
             second time a class is mentioned; instead, link to the
             first mention.
@@ -1006,7 +1013,7 @@ class HTMLWriter:
                               if isinstance(base, ClassDoc) and
                               base.canonical_name != DottedName('object')])
 
-        
+
         out('<ul class="nomargin-top">\n')
         for doc in sorted(class_set, key=lambda c:c.canonical_name[-1]):
             # If doc is a subclass of anything that's documented, then
@@ -1018,7 +1025,7 @@ class HTMLWriter:
                 # It's not a subclass of anything documented:
                 self.write_class_tree_item(out, doc, class_set)
         out('</ul>\n')
-        
+
         # Footer material
         self.write_navbar(out, 'trees')
         self.write_footer(out)
@@ -1046,10 +1053,10 @@ class HTMLWriter:
 
     LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ_'
     """The alphabetical sections that are used for link index pages."""
-    
+
     def write_link_index(self, out, indices, title, url, index_by_section,
                          sections=LETTERS, section_url='#%s'):
-        
+
         # Header
         self.write_indexpage_header(out, indices, title, url)
 
@@ -1082,14 +1089,14 @@ class HTMLWriter:
         out('<br />')
         self.write_navbar(out, 'indices')
         self.write_footer(out)
-                
-        
+
+
     def write_metadata_index(self, out, indices, field, title, typ):
         """
         Write an HTML page containing a metadata index.
         """
         index = indices[field]
-        
+
         # Header material.
         self.write_indexpage_header(out, indices, title,
                                     '%s-index.html' % field)
@@ -1155,7 +1162,7 @@ class HTMLWriter:
 
     def write_index_section(self, out, items, add_blankline=False):
         out('<table class="link-index" width="100%" border="1">\n')
-        num_rows = (len(items)+2)/3
+        num_rows = int((len(items)+2)/3)
         for row in range(num_rows):
             out('<tr>\n')
             for col in range(3):
@@ -1193,7 +1200,7 @@ class HTMLWriter:
         L{epydoc.docwriter.html_help}.
         """
         # todo: optionally parse .rst etc help files?
-        
+
         # Get the contents of the help file.
         if self._helpfile:
             if os.path.exists(self._helpfile):
@@ -1218,7 +1225,7 @@ class HTMLWriter:
     #////////////////////////////////////////////////////////////
     #{ 2.6. Frames-based Table of Contents
     #////////////////////////////////////////////////////////////
-    
+
     write_frames_index = compile_template(
         """
         write_frames_index(self, out)
@@ -1247,7 +1254,7 @@ class HTMLWriter:
         </html>
         ''')
         # \------------------------------------------------------------/
-    
+
     write_toc = compile_template(
         """
         write_toc(self, out)
@@ -1286,7 +1293,7 @@ class HTMLWriter:
             if is_private:
                 if not self._show_private: continue
                 out('  <div class="private">\n')
-                
+
             if isinstance(doc, ModuleDoc):
                 out('    <a target="moduleFrame" href="%s"\n'
                     '     onclick="setFrame(\'%s\',\'%s\');"'
@@ -1306,8 +1313,8 @@ class HTMLWriter:
         self.write_toc_section(out, "All Classes", self.class_list)
 
         # List the functions.
-        funcs = [d for d in self.routine_list 
-                 if not isinstance(self.docindex.container(d), 
+        funcs = [d for d in self.routine_list
+                 if not isinstance(self.docindex.container(d),
                                    (ClassDoc, type(None)))]
         self.write_toc_section(out, "All Functions", funcs)
 
@@ -1352,7 +1359,7 @@ class HTMLWriter:
         variables = doc.select_variables(value_type='other', imported=False,
                                          public=self._public_filter)
         self.write_toc_section(out, "Variables", variables, fullname=False)
-        
+
         # Footer material.
         out('<hr />\n')
         if self._show_private:
@@ -1436,7 +1443,7 @@ class HTMLWriter:
         @rtype: C{None}
         """
         filename = os.path.join(directory, 'epydoc.css')
-        
+
         # Get the contents for the stylesheet file.
         if cssname is None:
             css = STYLESHEETS['default'][0]
@@ -1473,7 +1480,7 @@ class HTMLWriter:
 
     #: A javascript that is used to show or hide the API documentation
     #: for private objects.  In order for this to work correctly, all
-    #: documentation for private objects should be enclosed in 
+    #: documentation for private objects should be enclosed in
     #: C{<div class="private">...</div>} elements.
     TOGGLE_PRIVATE_JS = '''
       function toggle_private() {
@@ -1634,7 +1641,7 @@ class HTMLWriter:
           }
       }
     '''.strip()
-          
+
 
     #////////////////////////////////////////////////////////////
     #{ 2.10. Graphs
@@ -1644,9 +1651,9 @@ class HTMLWriter:
         if graph is None: return ''
         graph.caption = graph.title = None
         return graph.to_html(self._directory) or ''
-    
+
     RE_CALLGRAPH_ID = re.compile(r"""["'](.+-div)['"]""")
-    
+
     def render_callgraph(self, callgraph, token=""):
         """Render the HTML chunk of a callgraph.
 
@@ -1664,8 +1671,8 @@ class HTMLWriter:
         @rtype: C{str}
         """
         if callgraph is None: return ""
-        
-        if isinstance(callgraph, str):
+
+        if isinstance(callgraph, six.string_types):
             uid = callgraph
             graph_html = self._callgraph_cache.get(callgraph, "")
         elif callgraph.uid in self._callgraph_cache:
@@ -1703,7 +1710,7 @@ class HTMLWriter:
         # Use class=codelink, to match style w/ the source code link.
         if callgraph is None: return ''
 
-        if isinstance(callgraph, str):
+        if isinstance(callgraph, six.string_types):
             uid = callgraph
         else:
             uid = callgraph.uid
@@ -1717,19 +1724,19 @@ class HTMLWriter:
     #////////////////////////////////////////////////////////////
 
     IMAGES = {'crarr.png': # Carriage-return arrow, used for LINEWRAP.
-              'iVBORw0KGgoAAAANSUhEUgAAABEAAAAKCAMAAABlokWQAAAALHRFWHRD'
-              'cmVhdGlvbiBUaW1lAFR1\nZSAyMiBBdWcgMjAwNiAwMDo0MzoxMCAtMD'
-              'UwMGAMEFgAAAAHdElNRQfWCBYFASkQ033WAAAACXBI\nWXMAAB7CAAAe'
-              'wgFu0HU+AAAABGdBTUEAALGPC/xhBQAAAEVQTFRF////zcOw18/AgGY0'
-              'c1cg4dvQ\ninJEYEAAYkME3NXI6eTcloFYe2Asr5+AbE4Uh29A9fPwqp'
-              'l4ZEUI8O3onopk0Ma0lH5U1nfFdgAA\nAAF0Uk5TAEDm2GYAAABNSURB'
-              'VHjaY2BAAbzsvDAmK5oIlxgfioiwCAe7KJKIgKAQOzsLLwTwA0VY\n+d'
-              'iRAT8T0AxuIIMHqoaXCWIPGzsHJ6orGJiYWRjQASOcBQAocgMSPKMTIg'
-              'AAAABJRU5ErkJggg==\n',
+              six.b('iVBORw0KGgoAAAANSUhEUgAAABEAAAAKCAMAAABlokWQAAAALHRFWHRD'
+                    'cmVhdGlvbiBUaW1lAFR1\nZSAyMiBBdWcgMjAwNiAwMDo0MzoxMCAtMD'
+                    'UwMGAMEFgAAAAHdElNRQfWCBYFASkQ033WAAAACXBI\nWXMAAB7CAAAe'
+                    'wgFu0HU+AAAABGdBTUEAALGPC/xhBQAAAEVQTFRF////zcOw18/AgGY0'
+                    'c1cg4dvQ\ninJEYEAAYkME3NXI6eTcloFYe2Asr5+AbE4Uh29A9fPwqp'
+                    'l4ZEUI8O3onopk0Ma0lH5U1nfFdgAA\nAAF0Uk5TAEDm2GYAAABNSURB'
+                    'VHjaY2BAAbzsvDAmK5oIlxgfioiwCAe7KJKIgKAQOzsLLwTwA0VY\n+d'
+                    'iRAT8T0AxuIIMHqoaXCWIPGzsHJ6orGJiYWRjQASOcBQAocgMSPKMTIg'
+                    'AAAABJRU5ErkJggg==\n'),
               }
 
     def write_images(self, directory):
-        for (name, data) in list(self.IMAGES.items()):
+        for (name, data) in self.IMAGES.items():
             f = open(os.path.join(directory, name), 'wb')
             f.write(base64.decodestring(data))
             f.close()
@@ -1757,7 +1764,7 @@ class HTMLWriter:
           <link rel="stylesheet" href="epydoc.css" type="text/css" />
           <script type="text/javascript" src="epydoc.js"></script>
         </head>
-        
+
         <body bgcolor="white" text="black" link="blue" vlink="#204080"
               alink="#204080">
         ''')
@@ -1850,7 +1857,7 @@ class HTMLWriter:
               <th>&nbsp;&nbsp;&nbsp;<a
                 href="$self._top_page_url$">Home</a>&nbsp;&nbsp;&nbsp;</th>
         >>> #endif
-        
+
           <!-- Tree link -->
         >>> if context == "trees":
               <th bgcolor="#70b0f0" class="navbar-select"
@@ -1859,7 +1866,7 @@ class HTMLWriter:
               <th>&nbsp;&nbsp;&nbsp;<a
                 href="$self._trees_url$">Trees</a>&nbsp;&nbsp;&nbsp;</th>
         >>> #endif
-        
+
           <!-- Index link -->
         >>> if context == "indices":
               <th bgcolor="#70b0f0" class="navbar-select"
@@ -1868,7 +1875,7 @@ class HTMLWriter:
               <th>&nbsp;&nbsp;&nbsp;<a
                 href="identifier-index.html">Indices</a>&nbsp;&nbsp;&nbsp;</th>
         >>> #endif
-        
+
           <!-- Help link -->
         >>> if context == "help":
               <th bgcolor="#70b0f0" class="navbar-select"
@@ -1877,7 +1884,7 @@ class HTMLWriter:
               <th>&nbsp;&nbsp;&nbsp;<a
                 href="help.html">Help</a>&nbsp;&nbsp;&nbsp;</th>
         >>> #endif
-        
+
         >>> if self._prj_link:
           <!-- Project homepage -->
               <th class="navbar" align="right" width="100%">
@@ -1967,7 +1974,7 @@ class HTMLWriter:
                 name = container.canonical_name
                 crumbs.insert(0, self.href(container, label)) # [xx] code=0??
                 doc = container
-        
+
     def _crumb(self, doc):
         if (len(doc.canonical_name)==1 and
             doc.canonical_name[0].startswith('script-')):
@@ -2007,7 +2014,7 @@ class HTMLWriter:
                                         value_type=value_type,
                                         public=self._public_filter))
                   for group_name in doc.group_names()]
-                
+
         # Discard any empty groups; and return if they're all empty.
         groups = [(g,vars) for (g,vars) in groups if vars]
         if not groups: return
@@ -2063,7 +2070,7 @@ class HTMLWriter:
                     normal_vars.append(var_doc)
             else:
                 normal_vars.append(var_doc)
-            
+
         # Write a header for the group.
         if name != '':
             tr_class = ''
@@ -2100,7 +2107,7 @@ class HTMLWriter:
                 self.write_var_list(out, private_vars)
                 out('      </p></div>\n')
         out('    </td>\n  </tr>\n')
-    
+
     def write_var_list(self, out, vardocs):
         out('      ')
         out(',\n      '.join(['<code>%s</code>' % self.href(v,v.name)
@@ -2111,7 +2118,7 @@ class HTMLWriter:
         Generate HTML code for a single line of a summary table, and
         write it to C{out}.  See L{write_summary_table} for more
         information.
-        
+
         @param var_doc: The API documentation for the variable that
             should be described by this line of the summary table.
         @param container: The API documentation for the class or
@@ -2140,7 +2147,7 @@ class HTMLWriter:
             if 'callgraph' in self._graph_types:
                 linker = _HTMLDocstringLinker(self, var_doc.value)
                 callgraph = call_graph([var_doc.value], self.docindex,
-                                       linker, var_doc, add_callers=True, 
+                                       linker, var_doc, add_callers=True,
                                        add_callees=True)
                 if callgraph and callgraph.nodes:
                     var_doc.value.callgraph_uid = callgraph.uid
@@ -2166,7 +2173,7 @@ class HTMLWriter:
         # Add the summary to the description (if there is one).
         summary = self.summary(var_doc, indent=6)
         if summary: description += '<br />\n      %s' % summary
-        
+
         # If it's inherited, then add a note to the description.
         if var_doc.container != container and self._inheritance=="included":
             description += ("\n      <em>(Inherited from " +
@@ -2287,7 +2294,7 @@ class HTMLWriter:
 
             self.write_property_details_entry(out, var_doc, descr,
                                               accessors, div_class)
-        
+
         # Variables
         else:
             self.write_variable_details_entry(out, var_doc, descr, div_class)
@@ -2317,7 +2324,7 @@ class HTMLWriter:
                 return self.href(val_doc, context=context)
         else:
             return '??'
-        
+
     def arg_name_to_html(self, func_doc, arg_name):
         """
         A helper function used to format an argument name, for use in
@@ -2510,7 +2517,7 @@ class HTMLWriter:
         </div>
         ''')
         # \------------------------------------------------------------/
-        
+
     write_variable_details_entry = compile_template(
         '''
         write_variable_details_entry(self, out, var_doc, descr, div_class)
@@ -2577,7 +2584,7 @@ class HTMLWriter:
             bases = doc.bases
         else:
             bases = []
-        
+
         if postfix == '':
             # [XX] use var name instead of canonical name?
             s = (' '*(width-2) + '<strong class="uidshort">'+
@@ -2587,7 +2594,7 @@ class HTMLWriter:
             base = bases[i]
             label = self.contextual_label(base, context)
             s = (' '*(width-4-len(label)) + self.href(base, label)
-                   +' --+'+postfix+'\n' + 
+                   +' --+'+postfix+'\n' +
                    ' '*(width-4) +
                    '   |'+postfix+'\n' +
                    s)
@@ -2628,12 +2635,12 @@ class HTMLWriter:
             else:
                 context_name = context.canonical_name
                 return str(doc.canonical_name.contextualize(context_name))
-        
+
     #////////////////////////////////////////////////////////////
     #{ Function Signatures
     #////////////////////////////////////////////////////////////
 
-    def function_signature(self, api_doc, is_summary=False, 
+    def function_signature(self, api_doc, is_summary=False,
                            link_name=False, anchor=False, context=None):
         """Render a function signature in HTML.
 
@@ -2655,7 +2662,7 @@ class HTMLWriter:
         """
         if is_summary: css_class = 'summary-sig'
         else: css_class = 'sig'
-        
+
         # [XX] clean this up!
         if isinstance(api_doc, VariableDoc):
             func_doc = api_doc.value
@@ -2728,7 +2735,7 @@ class HTMLWriter:
         return s
 
     def _arg_name(self, arg):
-        if isinstance(arg, str):
+        if isinstance(arg, six.string_types + (six.binary_type,)):
             return arg
         elif len(arg) == 1:
             return '(%s,)' % self._arg_name(arg[0])
@@ -2736,12 +2743,12 @@ class HTMLWriter:
             return '(%s)' % (', '.join([self._arg_name(a) for a in arg]))
 
 
-    
+
 
     #////////////////////////////////////////////////////////////
     #{ Import Lists
     #////////////////////////////////////////////////////////////
-        
+
     def write_imports(self, out, doc):
         assert isinstance(doc, NamespaceDoc)
         imports = doc.select_variables(imported=True,
@@ -2765,11 +2772,11 @@ class HTMLWriter:
                              tooltip='%s' % var_doc.value.canonical_name)
         else:
             return plaintext_to_html(var_doc.name)
-            
+
     #////////////////////////////////////////////////////////////
     #{ Function Attributes
     #////////////////////////////////////////////////////////////
-        
+
     #////////////////////////////////////////////////////////////
     #{ Module Trees
     #////////////////////////////////////////////////////////////
@@ -2787,7 +2794,7 @@ class HTMLWriter:
             for submodule in doc.submodule_groups[group_name]:
                 self.write_module_tree_item(out, submodule, package=doc)
             out('  </ul></td></tr>\n')
-                
+
         out(self.TABLE_FOOTER+'\n<br />\n')
 
     def write_module_tree_item(self, out, doc, package=None):
@@ -2836,7 +2843,7 @@ class HTMLWriter:
             </li>
         ''')
         # \------------------------------------------------------------/
-    
+
     #////////////////////////////////////////////////////////////
     #{ Standard Fields
     #////////////////////////////////////////////////////////////
@@ -2853,7 +2860,7 @@ class HTMLWriter:
         """
         fields = []
         field_values = {}
-        
+
         for (field, arg, descr) in doc.metadata:
             if field not in field_values:
                 fields.append(field)
@@ -2868,9 +2875,9 @@ class HTMLWriter:
         out('<div class="fields">')
         for field in fields:
             if field.takes_arg:
-                for arg, descrs in list(field_values[field].items()):
+                for arg, descrs in field_values[field].items():
                     self.write_standard_field(out, doc, field, descrs, arg)
-                                              
+
             else:
                 self.write_standard_field(out, doc, field, field_values[field])
 
@@ -2879,7 +2886,7 @@ class HTMLWriter:
     write_standard_field = compile_template(
         """
         write_standard_field(self, out, doc, field, descrs, arg='')
-        
+
         """,
         # /------------------------- Template -------------------------\
         '''
@@ -2927,7 +2934,7 @@ class HTMLWriter:
                         ('deprecated', 'Deprecation List', 'Deprecations'),
                         ('since', 'Introductions List', 'Introductions'),
                         ]
-    
+
     def build_identifier_index(self):
         items = []
         for doc in self.indexed_docs:
@@ -2948,7 +2955,7 @@ class HTMLWriter:
                 first_letter = '_'
             index.setdefault(first_letter, []).append(item)
         return index
-    
+
     def build_term_index(self):
         items = []
         for doc in self.indexed_docs:
@@ -3059,13 +3066,13 @@ class HTMLWriter:
         </script>
 
         <h3>Epydoc Auto-redirect page</h3>
-        
+
         <p>When javascript is enabled, this page will redirect URLs of
         the form <tt>redirect.html#<i>dotted.name</i></tt> to the
         documentation for the object with the given fully-qualified
         dotted name.</p>
         <p><a id="message"> &nbsp; </a></p>
-        
+
         <script type="text/javascript">
         <!--
         if (dottedName) {
@@ -3118,7 +3125,7 @@ class HTMLWriter:
         """Make a best-guess as to whether the given class is public."""
         container = self.docindex.container(valdoc)
         if isinstance(container, NamespaceDoc):
-            for vardoc in list(container.variables.values()):
+            for vardoc in container.variables.values():
                 if vardoc in (UNKNOWN, None): continue
                 if vardoc.value is valdoc:
                     return vardoc.is_public
@@ -3203,11 +3210,11 @@ class HTMLWriter:
         # Module: <canonical_name>-module.html
         if isinstance(obj, ModuleDoc):
             if obj not in self.module_set: return None
-            return urllib.parse.quote('%s'%obj.canonical_name) + '-module.html'
+            return six.moves.urllib.parse.quote('%s'%obj.canonical_name) + '-module.html'
         # Class: <canonical_name>-class.html
         elif isinstance(obj, ClassDoc):
             if obj not in self.class_set: return None
-            return urllib.parse.quote('%s'%obj.canonical_name) + '-class.html'
+            return six.moves.urllib.parse.quote('%s'%obj.canonical_name) + '-class.html'
         # Variable
         elif isinstance(obj, VariableDoc):
             val_doc = obj.value
@@ -3224,7 +3231,7 @@ class HTMLWriter:
             else:
                 container_url = self.url(obj.container)
                 if container_url is None: return None
-                return '%s#%s' % (container_url, urllib.parse.quote('%s'%obj.name))
+                return '%s#%s' % (container_url, six.moves.urllib.parse.quote('%s'%obj.name))
         # Value (other than module or class)
         elif isinstance(obj, ValueDoc):
             container = self.docindex.container(obj)
@@ -3233,7 +3240,7 @@ class HTMLWriter:
             else:
                 container_url = self.url(container)
                 if container_url is None: return None
-                anchor = urllib.parse.quote('%s'%obj.canonical_name[-1])
+                anchor = six.moves.urllib.parse.quote('%s'%obj.canonical_name[-1])
                 return '%s#%s' % (container_url, anchor)
         # Dotted name: look up the corresponding APIDoc
         elif isinstance(obj, DottedName):
@@ -3254,12 +3261,12 @@ class HTMLWriter:
         if not self._incl_sourcecode:
             return ''
         url = self.pysrc_url(api_doc)
-        if url is not None: 
+        if url is not None:
             return ('<span class="codelink"><a href="%s">source&nbsp;'
                     'code</a></span>' % url)
         else:
             return ''
-    
+
     def pysrc_url(self, api_doc):
         if isinstance(api_doc, VariableDoc):
             if api_doc.value not in (None, UNKNOWN):
@@ -3269,7 +3276,7 @@ class HTMLWriter:
         elif isinstance(api_doc, ModuleDoc):
             if api_doc in self.modules_with_sourcecode:
                 return ('%s-pysrc.html' %
-                       urllib.parse.quote('%s' % api_doc.canonical_name))
+                       six.moves.urllib.parse.quote('%s' % api_doc.canonical_name))
             else:
                 return None
         else:
@@ -3284,8 +3291,8 @@ class HTMLWriter:
                 return module_pysrc_url
             mname_len = len(module.canonical_name)
             anchor = '%s' % api_doc.canonical_name[mname_len:]
-            return '%s#%s' % (module_pysrc_url, urllib.parse.quote(anchor))
-        
+            return '%s#%s' % (module_pysrc_url, six.moves.urllib.parse.quote(anchor))
+
         # We didn't find it:
         return None
 
@@ -3316,12 +3323,12 @@ class HTMLWriter:
                                  "meant to use the containing variable?)")
             else:
                 raise ValueError("Unable to find a label for %r" % target)
-                
+
             if context is not None and isinstance(label, DottedName):
                 label = label.contextualize(context.canonical_name.container())
-                
+
             label = plaintext_to_html(str(label))
-            
+
             # Munge names for scripts & unreachable values
             if label.startswith('script-'):
                 label = label[7:] + ' (script)'
@@ -3363,10 +3370,10 @@ class HTMLWriter:
             return self.docstring_to_html(pds, api_doc, indent)
         elif isinstance(api_doc, VariableDoc):
             return self._attr_to_html(attr, api_doc.value, indent)
-        
+
     def summary(self, api_doc, indent=0):
         return self._attr_to_html('summary', api_doc, indent)
-        
+
     def descr(self, api_doc, indent=0):
         return self._attr_to_html('descr', api_doc, indent)
 
@@ -3423,7 +3430,7 @@ class HTMLWriter:
                 return 'Function'
         else:
             return 'Variable'
-        
+
     def _doc_or_ancestor_is_private(self, api_doc):
         name = api_doc.canonical_name
         for i in range(len(name), 0, -1):
@@ -3451,18 +3458,18 @@ class HTMLWriter:
                 private.update([c for c in cls.subclasses if
                                 not self._val_is_public(c)])
         return private
-                
+
 class _HTMLDocstringLinker(epydoc.markup.DocstringLinker):
     def __init__(self, htmlwriter, container):
         self.htmlwriter = htmlwriter
         self.docindex = htmlwriter.docindex
         self.container = container
-        
+
     def translate_indexterm(self, indexterm):
         key = self.htmlwriter._term_index_to_anchor(indexterm)
         return ('<a name="%s"></a><i class="indexterm">%s</i>' %
                 (key, indexterm.to_html(self)))
-    
+
     def translate_identifier_xref(self, identifier, label=None):
         # Pick a label for this xref.
         if label is None: label = plaintext_to_html(identifier)
@@ -3472,7 +3479,7 @@ class _HTMLDocstringLinker(epydoc.markup.DocstringLinker):
         except: doc = 'notfound'
 
         # If we didn't find a target, then try checking in the contexts
-        # of the ancestor classes. 
+        # of the ancestor classes.
         if doc == 'notfound' and isinstance(self.container, RoutineDoc):
             container = self.docindex.get_vardoc(
                 self.container.canonical_name)
@@ -3480,7 +3487,7 @@ class _HTMLDocstringLinker(epydoc.markup.DocstringLinker):
                    and container.overrides not in (None, UNKNOWN)):
                 container = container.overrides
                 doc = self.docindex.find(identifier, container)
-                
+
         # Translate it into HTML.
         if doc in (None, 'notfound'):
             if doc == 'notfound':
@@ -3490,16 +3497,16 @@ class _HTMLDocstringLinker(epydoc.markup.DocstringLinker):
             return self.htmlwriter.href(doc, label, 'link')
 
     def url_for(self, identifier):
-        if isinstance(identifier, (str, DottedName)):
+        if isinstance(identifier, six.string_types + (DottedName,)):
             doc = self.docindex.find(identifier, self.container)
             if doc:
                 return self.htmlwriter.url(doc)
             else:
                 return None
-            
+
         elif isinstance(identifier, APIDoc):
             return self.htmlwriter.url(identifier)
-            
+
         else:
             raise TypeError('Expected string or APIDoc')
 
@@ -3511,7 +3518,7 @@ class _HTMLDocstringLinker(epydoc.markup.DocstringLinker):
         if (isinstance(self.container, RoutineDoc) and
             identifier in self.container.all_args()):
             return
-        
+
         failed_xrefs = self.htmlwriter._failed_xrefs
         context = self.container.canonical_name
         failed_xrefs.setdefault(identifier,{})[context] = 1

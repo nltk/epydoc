@@ -11,6 +11,9 @@ Documentation completeness checker.  This module defines a single
 class, C{DocChecker}, which can be used to check the that specified
 classes of objects are documented.
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 ##################################################
@@ -20,6 +23,9 @@ __docformat__ = 'epytext en'
 import re, sys, os.path, string
 from xml.dom.minidom import Text as _Text
 from epydoc.apidoc import *
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 # The following methods may be undocumented:
 _NO_DOCS = ['__hash__', '__repr__', '__str__', '__cmp__']
@@ -45,7 +51,7 @@ class DocChecker:
 
     What checks are run, and what objects they are run on, are
     specified by the constants defined by C{DocChecker}.  These
-    constants are divided into three groups.  
+    constants are divided into three groups.
 
       - Type specifiers indicate what type of objects should be
         checked: L{MODULE}; L{CLASS}; L{FUNC}; L{VAR}; L{IVAR};
@@ -61,10 +67,10 @@ class DocChecker:
     least one value from each specifier group:
 
         >>> checker.check(DocChecker.MODULE | DocChecker.DESCR)
-        
+
     To specify multiple values from a single group, simply or their
     values together:
-    
+
         >>> checker.check(DocChecker.MODULE | DocChecker.CLASS |
         ...               DocChecker.FUNC )
 
@@ -110,7 +116,7 @@ class DocChecker:
         should have a C{version} field.
     @type DESCR: C{int}
     @cvar DESCR: Check specifier that indicates that every object
-        should have a description.  
+        should have a description.
     @type ALL_C: C{int}
     @cvar ALL_C: Check specifier that indicates that  all checks
         should be run.
@@ -180,9 +186,9 @@ class DocChecker:
         """
         if not check_sets:
             check_sets = (DocChecker.MODULE | DocChecker.CLASS |
-                          DocChecker.FUNC | DocChecker.VAR | 
+                          DocChecker.FUNC | DocChecker.VAR |
                           DocChecker.DESCR,)
-            
+
         self._warnings = {}
         log.start_progress('Checking docs')
         for j, checks in enumerate(check_sets):
@@ -196,10 +202,10 @@ class DocChecker:
 
     def _check(self, checks):
         self._checks = checks
-        
+
         # Get the list of objects to check.
         valdocs = sorted(self._docindex.reachable_valdocs(
-            imports=False, packages=False, bases=False, submodules=False, 
+            imports=False, packages=False, bases=False, submodules=False,
             subclasses=False, private = (checks & DocChecker.PRIVATE)))
         docs = set()
         for d in valdocs:
@@ -254,22 +260,22 @@ class DocChecker:
                 if 'version' == tag: break
             else:
                 self.warning('No version', doc)
-            
+
     def _check_module(self, doc):
         """
         Run checks on the module whose APIDoc is C{doc}.
-        
+
         @param doc: The APIDoc of the module to check.
         @type doc: L{APIDoc}
         @rtype: C{None}
         """
         if self._checks & DocChecker.MODULE:
             self._check_basic(doc)
-        
+
     def _check_class(self, doc):
         """
         Run checks on the class whose APIDoc is C{doc}.
-        
+
         @param doc: The APIDoc of the class to check.
         @type doc: L{APIDoc}
         @rtype: C{None}
@@ -285,7 +291,7 @@ class DocChecker:
         """
         Run checks on the variable whose documentation is C{var} and
         whose name is C{name}.
-        
+
         @param doc: The documentation for the variable to check.
         @type doc: L{APIDoc}
         @rtype: C{None}
@@ -303,11 +309,11 @@ class DocChecker:
                 if (self._checks & DocChecker.TYPE and
                     doc.type_descr in (None, UNKNOWN)):
                     self.warning('No type information', doc)
-            
+
     def _check_func(self, doc):
         """
         Run checks on the function whose APIDoc is C{doc}.
-        
+
         @param doc: The APIDoc of the function to check.
         @type doc: L{APIDoc}
         @rtype: C{None}
@@ -333,7 +339,7 @@ class DocChecker:
             else:
                 args_with_descr = []
                 for arg, descr in doc.arg_descrs:
-                    if isinstance(arg, basestring):
+                    if isinstance(arg, six.string_types):
                         args_with_descr.append(arg)
                     else:
                         args_with_descr += arg

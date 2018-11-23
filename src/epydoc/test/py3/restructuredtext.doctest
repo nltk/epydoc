@@ -19,28 +19,28 @@ The implementation of the summaization function works as expected.
 #Let's not lose anything!
 
 >>> getsummary("Single line")
-(u'Single line', False)
+('Single line', False)
 
 >>> getsummary("Single line.")
-(u'Single line.', False)
+('Single line.', False)
 
 >>> getsummary("""
 ... Single line *with* period.
 ... """)
-(u'Single line with period.', False)
+('Single line with period.', False)
 
 >>> getsummary("""
 ... Single line `with` period.
 ...
 ... :type: Also with a tag.
 ... """)
-(u'Single line with period.', False)
+('Single line with period.', False)
 
 >>> getsummary("""
 ... Other lines **with** period.
 ... This is attached
 ... """)
-(u'Other lines with period.', True)
+('Other lines with period.', True)
 
 >>> getsummary("""
 ... Other lines *with* period.
@@ -49,27 +49,27 @@ The implementation of the summaization function works as expected.
 ...
 ... :type: Also with a tag.
 ... """)
-(u'Other lines with period.', True)
+('Other lines with period.', True)
 
 >>> getsummary("""
 ... Other lines without period
 ... This is attached
 ... """)
-(u'Other lines without period\nThis is attached', False)
+('Other lines without period\nThis is attached', False)
 
 >>> getsummary("""
 ... Other lines without period
 ...
 ... This is detached
 ... """)
-(u'Other lines without period...', True)
+('Other lines without period...', True)
 
 >>> getsummary("""
 ... Single line *without* period
 ...
 ... :type: Also with a tag.
 ... """)
-(u'Single line without period', False)
+('Single line without period', False)
 
 >>> getsummary("""
 ... This is the first line.
@@ -78,7 +78,7 @@ The implementation of the summaization function works as expected.
 ...
 ... Other stuff after a tag.
 ... """)
-(u'This is the first line.', True)
+('This is the first line.', True)
 
 Python code
 ===========
@@ -101,7 +101,7 @@ as colorized Python code.
 ... """, err)
 >>> err
 []
->>> print p.to_html(None)
+>>> print(p.to_html(None))
 <p>A test module</p>
 <pre class="py-doctest">
 <span class="py-comment"># This is some Python code</span>
@@ -118,7 +118,7 @@ Consolidated Fields
 
     >>> from epydoc.test.util import runbuilder
 
-    >>> runbuilder(s='''
+    >>> runbuilder(s=b'''
     ...     __docformat__ = 'restructuredtext'
     ...     class Foo:
     ...         """This is the object docstring
@@ -148,21 +148,21 @@ Consolidated Fields
         |  +- type_descr = None
         |  +- value
         |     +- RoutineDoc for epydoc_test.Foo.__init__ [2]
-        |        +- arg_descrs = [([u'a'], u'init param.')]
-        |        +- arg_types = {u'a': u'string'}
-        |        +- exception_descrs = [(DottedName(u'ValueError'), ...
+        |        +- arg_descrs = [(['a'], 'init param.')]
+        |        +- arg_types = {'a': 'string'}
+        |        +- exception_descrs = [(DottedName('ValueError'), ...
         |        +- kwarg = None
         |        +- posargs = ['self', 'a']
         |        +- vararg = None
         +- a => VariableDoc for epydoc_test.Foo.a [3]
-           +- name = u'a'
-           +- type_descr = u'date'
+           +- name = 'a'
+           +- type_descr = 'date'
            +- value = <UNKNOWN>
 
 Misc rst constructs
 ===================
 
-    >>> runbuilder(s='''
+    >>> runbuilder(s=b'''
     ...     __docformat__ = 'restructuredtext'
     ...
     ...     class Foo:
@@ -196,7 +196,7 @@ Misc rst constructs
     ...     build='Foo',
     ...     attribs="variables name value type_descr return_type descr")
     ClassDoc for epydoc_test.Foo [0]
-     +- descr = u'Testing defining_module'
+     +- descr = 'Testing defining_module'
      +- variables
         +- __init__ => VariableDoc for epydoc_test.Foo.__init__ [1]
         |  +- descr = None
@@ -207,9 +207,9 @@ Misc rst constructs
         |        +- descr = None
         |        +- return_type = None
         +- c => VariableDoc for epydoc_test.Foo.c [3]
-        |  +- descr = u'class var in class docstring'
+        |  +- descr = 'class var in class docstring'
         |  +- name = 'c'
-        |  +- type_descr = u'str'
+        |  +- type_descr = 'str'
         |  +- value
         |     +- GenericValueDoc [4]
         |        +- descr = None
@@ -219,12 +219,12 @@ Misc rst constructs
         |  +- type_descr = None
         |  +- value
         |     +- RoutineDoc for epydoc_test.Foo.f [6]
-        |        +- descr = u'A function has a defining module'
-        |        +- return_type = u'int'
+        |        +- descr = 'A function has a defining module'
+        |        +- return_type = 'int'
         +- x => VariableDoc for epydoc_test.Foo.x [7]
-        |  +- descr = u'A funny number'
-        |  +- name = u'x'
-        |  +- type_descr = u'float'
+        |  +- descr = 'A funny number'
+        |  +- name = 'x'
+        |  +- type_descr = 'float'
         |  +- value = <UNKNOWN>
         +- y => VariableDoc for epydoc_test.Foo.y [8]
            +- descr = None
@@ -232,5 +232,5 @@ Misc rst constructs
            +- type_descr = None
            +- value
               +- PropertyDoc for epydoc_test.Foo.y [9]
-                 +- descr = u'A property has no defining module'
-                 +- type_descr = u'int'
+                 +- descr = 'A property has no defining module'
+                 +- type_descr = 'int'

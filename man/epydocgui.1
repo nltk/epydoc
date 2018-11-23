@@ -2,7 +2,7 @@
 .\" Epydoc graphical interface man page.
 .\" $Id: epydocgui.1 405 2002-11-07 10:52:37Z edloper $
 .\"
-.TH EPYDOCGUI 1 
+.TH EPYDOCGUI 1
 .SH NAME
 epydocgui \- graphical interface to epydoc
 .\" ================== SYNOPSIS ====================
@@ -24,7 +24,7 @@ lightweight markup language called
 can be used to format docstrings, and to add information about
 specific fields, such as parameters and instance variables.
 .PP
-The API documentation produced by 
+The API documentation produced by
 .B epydocgui
 consists of a set of HTML files.  Two subdirectories are created for
 the public and private documentation.  Within each subdirectories,
@@ -60,7 +60,7 @@ Print the version of Epydoc.
 .\" ================== HTML FILES ====================
 .\" (this was copied from epydoc.1)
 .SH HTML FILES
-The API documentation produced by 
+The API documentation produced by
 .B epydoc
 consists of the following files:
 .RS 4
@@ -71,16 +71,16 @@ The standard entry point for the documentation.  Normally,
 is a frame index file, which defines three frames: two frames on
 the left side of the browser contain a table of contents, and the main
 frame on the right side of the window contains documentation pages.
-But if the 
+But if the
 .B \-\-no\-frames
 option is used, then
 .B index.html
 will redirect the user to the project's top page.
 .TP
 .BI m- module .html
-The API documentation for a module.  
+The API documentation for a module.
 .I module
-is the complete dotted name of the module, such as 
+is the complete dotted name of the module, such as
 .B sys
 or
 .BR epydoc.epytext .
@@ -129,7 +129,7 @@ The table of contents for a module.  This page is displayed in the
 lower\-left frame, and provides links to every class, type, exception,
 function, and variable defined by the module.
 .I module
-is the complete dotted name of the module, such as 
+is the complete dotted name of the module, such as
 .B sys
 or
 .BR epydoc.epytext .
@@ -210,7 +210,7 @@ is not well-formed.  Link targets must be valid python identifiers.
 The target specified for an inline uri contruction
 .RB ( "U{...}" )
 is not well-formed.  This typically occurs if inline markup is nested
-inside the URI target.  
+inside the URI target.
 .TP
 .B Fields must be at the top level.
 The list of fields
@@ -293,7 +293,7 @@ match exactly for them to be considered a heading.
 .RE
 .PP
 Field warnings are caused by epytext docstrings containing invalid
-fields.  The contents of the invalid field are generally ignored.  
+fields.  The contents of the invalid field are generally ignored.
 Epydoc can generate the following field warnings:
 .RS 4
 .TP
@@ -342,7 +342,7 @@ question.  Epydoc can generate the following inspection errors:
 .TP
 .BI "The parameters of " inhmethod " do not match " basemethod .
 The parameters of the undocumented method
-.I inhmethod 
+.I inhmethod
 do not match the parameters of the base class method
 .I basemethod
 that it overrides.  As a result,
@@ -390,7 +390,7 @@ candidate was correct.  In this case, epydoc arbitrarily chooses the
 first candidate that it finds.
 .TP
 .BI "Could not find a module for " object
-Epydoc was unable to determine which module defines 
+Epydoc was unable to determine which module defines
 .IR object .
 If
 .I object

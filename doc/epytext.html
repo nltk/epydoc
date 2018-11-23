@@ -50,7 +50,7 @@ handful of special character sequences. </p>
   unordered list items, and "<code>&gt;&gt;&gt;</code>" is used to
   mark doctest blocks. </li>
 </ul>
-  
+
 <p> The following sections describe how to use each type of block
 structure. </p>
 
@@ -71,7 +71,7 @@ illustrates how paragraphs can be used: </p>
     This is a paragraph.  Paragraphs can
     span multiple lines, and can contain
     I{inline markup}.
-    
+
 
     This is another paragraph.  Paragraphs
     are separated by blank lines.
@@ -85,8 +85,8 @@ illustrates how paragraphs can be used: </p>
   other by blank lines. </p>
   </td></tr>
 </table>
-  
-<a name="list"/> 
+
+<a name="list"/>
 <h3> 2.2. Lists </h3>
 
 <p> Epytext supports both ordered and unordered lists.  A list
@@ -157,10 +157,10 @@ indentation: </p>
     <i>[...]</i>
 </pre>
 </td><td>
-  This is a paragraph. 
+  This is a paragraph.
   <ol>
     <li> This is a list item. </li>
-    <li> This is a second list item. 
+    <li> This is a second list item.
     <ul><li>This is a sublist.</li></ul></li>
   </ol>
   </td></tr>
@@ -202,7 +202,7 @@ the paragraph in its parent list item by indentation: </p>
         - This is a sublist.
         - The sublist contains two
           items.
-            - The second item of the 
+            - The second item of the
               sublist has its own sublist.
 
       2. This list item contains two
@@ -216,7 +216,7 @@ the paragraph in its parent list item by indentation: </p>
     <i>[...]</i>
 </pre>
 </td><td>
-  This is a paragraph. 
+  This is a paragraph.
   <ol>
     <li> This is a list item. </li>
     <ul>
@@ -352,7 +352,7 @@ be used: </p>
 <code class="keyword">def</code> <code class="function">example</code>():
     <code class="string">"""
     The following is a literal block::
-    
+
         Literal /
                / Block
 
@@ -395,7 +395,7 @@ blocks can be used: </p>
 <code class="keyword">def</code> <code class="function">example</code>():
     <code class="string">"""
     The following is a doctest block:
-    
+
         &gt;&gt;&gt; print (1+3,
         ...        3+5)
         (4, 8)
@@ -472,7 +472,7 @@ used: </p>
 </td><td>
     <dl><dt><b>Parameters:</b></dt>
       <dd><code><b>x</b></code> -
-         This is a description of the parameter x to a function. Note that the 
+         This is a description of the parameter x to a function. Note that the
         description is indented four spaces.
         <br><i>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
         (type=This is a description of x's type.)</i>
@@ -563,10 +563,10 @@ illustrates how the four basic markup types can be used: </p>
   <i><b>Inline markup</b> may be nested; and it may span</i>
   multiple lines.
   <ul>
-    <li> <i>Italicized text</i> </li> 
-    <li> <b>Bold-faced text</b> </li> 
-    <li> <code>Source code</code> </li> 
-    <li> Math: <i>m*x+b</i> </li> 
+    <li> <i>Italicized text</i> </li>
+    <li> <b>Bold-faced text</b> </li>
+    <li> <code>Source code</code> </li>
+    <li> Math: <i>m*x+b</i> </li>
   </ul>
   Without the capital letter, matching
   braces are not interpreted as markup:
@@ -925,7 +925,7 @@ href="epydoc-man.html#lbAH"><code>epydoc(1)</code> man page</a>. </p>
 
 <h3> 5.1. Epytext Warnings </h3>
 <ul>
-  
+
 <li><b class="error">Possible mal-formatted field item.</b> <br />
   Epytext detected a line that looks like a field item, but is not
   correctly formatted.  This typically occurs when the trailing colon
@@ -941,7 +941,7 @@ href="epydoc-man.html#lbAH"><code>epydoc(1)</code> man page</a>. </p>
 </ul>
 <h3> 5.2. Field Warnings </h3>
 <ul>
-  
+
 <li><b class="error"><code>@param</code> for unknown parameter <i>param</i>.</b> <br />
   A <code>@param</code> field was used to specify the type for a parameter that is
   not included in the function's signature.  This is typically caused
@@ -971,9 +971,9 @@ href="epydoc-man.html#lbAH"><code>epydoc(1)</code> man page</a>. </p>
 <li><b class="error">Redefinition of <i>field</i>.</b> <br />
   Multiple field tags define the value of <i>field</i> in the same
   docstring, but <i>field</i> can only take a single value.
-  
+
 </ul>
-<h3> 5.3. Epytext Errors </h3> 
+<h3> 5.3. Epytext Errors </h3>
 <ul>
 
 <li><b class="error">Bad link target.</b> <br />
@@ -1022,7 +1022,7 @@ string.</b> <br />
   If you intended the latter, then change the word-wrapping of the
   paragraph, or escape the first character of the word that looks like
   a bullet.
-  
+
 <li><b class="error">Unbalanced '{'.</b> <br />
   The docstring contains unbalanced braces.  Epytext requires that all
   braces must be balanced.  To include a single unbalanced brace, use
@@ -1065,9 +1065,9 @@ string.</b> <br />
     <a class="nav" href="epytext.html">
     Epytext</a></td></a>
   <td align="center" width="20%" class="nav">
-    
-    <A href="http://sourceforge.net/projects/epydoc"> 
-    <IMG src="sflogo.png" 
+
+    <A href="http://sourceforge.net/projects/epydoc">
+    <IMG src="sflogo.png"
     width="88" height="26" border="0" alt="SourceForge"
     align="top"/></A></td>
     </tr>

@@ -300,7 +300,7 @@ By default, DocParse does not look inside the following block types:
     ...     attribs="variables name")
     ModuleDoc for epydoc_test [0]
      +- variables = {}
-    
+
     >>> # By default, DocParser does not look inside while blocks
     >>> runparser(s="""
     ...     while condition:
@@ -327,7 +327,7 @@ blocks:
         |  +- name = u'for_gated'
         +- itervar => VariableDoc for epydoc_test.itervar [2]
            +- name = u'itervar'
-    
+
     >>> runparser(s="""
     ...     while condition:
     ...         while_gated = 'x'""",
@@ -392,8 +392,8 @@ constant takes precedence:
     ...     #: comment1
     ...     x = 12 #: comment2
     ...     '''string'''""",
-    ...     attribs="variables name docstring")
-    <UNKNOWN> has both a comment-docstring and a normal (string) docstring; ignoring the comment-docstring.
+    ...     attribs="variables name docstring") # doctest: +ELLIPSIS
+    Parsing .../epydoc_test.py (line 4): x has both a comment-docstring and a normal (string) docstring; ignoring the comment-docstring.
     ModuleDoc for epydoc_test [0]
      +- docstring = <UNKNOWN>
      +- variables
@@ -410,7 +410,7 @@ VariableDoc object in the module's children list).
     >>> runparser(s="""
     ...     def f(x):
     ...         'docstring for f'
-    ...         print 'inside f'
+    ...         print('inside f')
     ...     """, show="f", exclude='defining_module')
     RoutineDoc for epydoc_test.f [0]
      +- canonical_name = DottedName('epydoc_test', u'f')
@@ -435,7 +435,7 @@ of the variable argument and keyword argument, respectively:
     >>> runparser(s="""
     ...     def f(x, y=22, z=(1,), *v, **kw):
     ...         'docstring for f'
-    ...         print 'inside f'
+    ...         print('inside f')
     ...     """, show="f", exclude='defining_module')
     RoutineDoc for epydoc_test.f [0]
      +- canonical_name = DottedName('epydoc_test', u'f')
@@ -471,7 +471,7 @@ Decorators & Wrapper Assignments
     ...     @classmethod
     ...     def f(cls, x): 'docstring for f'
     ...     """,
-    ...     attribs='variables value docstring posargs') 
+    ...     attribs='variables value docstring posargs')
     ModuleDoc for epydoc_test [0]
      +- docstring = <UNKNOWN>
      +- variables
@@ -496,8 +496,8 @@ Classes
     ...     class F(((A).Nested)): "parens with dotted name"
     ...     class Z(B.__bases__[0]): "calculated base" # not handled!
     ...     """,
-    ...     attribs='variables value bases docstring')
-    Unable to extract the base list for epydoc_test.Z: Bad dotted name
+    ...     attribs='variables value bases docstring') # doctest: +ELLIPSIS
+    Parsing .../epydoc_test.py (line 10): Unable to extract the base list for class 'epydoc_test.Z'.
     ModuleDoc for epydoc_test [0]
      +- docstring = <UNKNOWN>
      +- variables
@@ -590,7 +590,7 @@ Deleting variables:
 The right-hand side of a ``del`` statement may contain a nested
 combination of lists, tuples, and parenthases.  All variables found
 anywhere in this nested structure should be deleted:
-    
+
     >>> runparser(s="""
     ...     a=b=c=d=e=f=g=1
     ...     del a
@@ -662,8 +662,8 @@ Single-Line Blocks
 
     >>> runparser(s="""
     ...     class A: 'docstring for A'
-    ...     
-    ... 
+    ...
+    ...
     ...     """,
     ...     attribs='variables value docstring')
     ModuleDoc for epydoc_test [0]
@@ -733,12 +733,12 @@ Instance Variables
     ...     class A:
     ...         def __init__(self, x, y):
     ...             self.x = 10
-    ...             
+    ...
     ...             self.y = 20 #: docstring for y
-    ...             
+    ...
     ...             self.z = 30
     ...             '''docstring for z'''
-    ...     
+    ...
     ...     """,
     ...     attribs='variables value is_instvar docstring local_variables')
     ModuleDoc for epydoc_test [0]

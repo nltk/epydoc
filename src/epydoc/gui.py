@@ -28,22 +28,29 @@ Usage::
 @todo: Use ini-style project files, rather than pickles (using the
 same format as the CLI).
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 __docformat__ = 'epytext en'
 
 import sys, os.path, re, glob
-from tkinter import *
-from tkinter.filedialog import askopenfilename, asksaveasfilename
-from _thread import start_new_thread, exit_thread
+from Tkinter import *
+from tkFileDialog import askopenfilename, asksaveasfilename
+from thread import start_new_thread, exit_thread
 from pickle import dump, load
 
 # askdirectory is only defined in python 2.2+; fall back on
 # asksaveasfilename if it's not available.
-try: from tkinter.filedialog import askdirectory
+try: from tkFileDialog import askdirectory
 except: askdirectory = None
 
 # Include support for Zope, if it's available.
 try: import ZODB
 except: pass
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 ##/////////////////////////////////////////////////////////////////////////
 ## CONSTANTS
@@ -75,11 +82,11 @@ SB_CONFIG = {'troughcolor':BG_COLOR, 'activebackground':BG_COLOR,
 LISTBOX_CONFIG = {'highlightcolor': BG_COLOR, 'highlightbackground': BG_COLOR,
                   'foreground':TEXT_COLOR, 'selectforeground': TEXT_COLOR,
                   'selectbackground': ACTIVEBG_COLOR, 'background':BG_COLOR}
-BUTTON_CONFIG = {'background':BG_COLOR, 'highlightthickness':0, 'padx':4, 
+BUTTON_CONFIG = {'background':BG_COLOR, 'highlightthickness':0, 'padx':4,
                  'highlightbackground': BG_COLOR, 'foreground':TEXT_COLOR,
                  'highlightcolor': BG_COLOR, 'activeforeground': TEXT_COLOR,
                  'activebackground': ACTIVEBG_COLOR, 'pady':0}
-CBUTTON_CONFIG = {'background':BG_COLOR, 'highlightthickness':0, 'padx':4, 
+CBUTTON_CONFIG = {'background':BG_COLOR, 'highlightthickness':0, 'padx':4,
                   'highlightbackground': BG_COLOR, 'foreground':TEXT_COLOR,
                   'highlightcolor': BG_COLOR, 'activeforeground': TEXT_COLOR,
                   'activebackground': ACTIVEBG_COLOR, 'pady':0,
@@ -145,7 +152,7 @@ from epydoc import log
 from epydoc.util import wordwrap
 class GUILogger(log.Logger):
     _STAGES = [40, 7, 1, 3, 1, 30, 1, 2, 100]
-    
+
     def __init__(self, progress, cancel):
         self._progress = progress
         self._cancel = cancel
@@ -156,7 +163,7 @@ class GUILogger(log.Logger):
         self._n = 0
         self._stage = 0
         self._message_blocks = []
-        
+
     def log(self, level, message):
         message = wordwrap(str(message)).rstrip() + '\n'
         if self._message_blocks:
@@ -174,28 +181,28 @@ class GUILogger(log.Logger):
             self.log('header', header)
             self._messages += messages
             self._messages.append( ('uline', ' '*75+'\n') )
-        
+
     def start_progress(self, header=None):
         self.log(log.INFO, header)
         self._stage += 1
-        
+
     def end_progress(self):
         pass
-    
+
     def progress(self, percent, message=''):
         if self._cancel[0]: exit_thread()
         i = self._stage - 1
         p = ((sum(self._STAGES[:i]) + percent*self._STAGES[i]) /
              float(sum(self._STAGES)))
         self._progress[0] = p
-        
+
     def read(self):
         if self._n >= len(self._messages):
             return None, None
         else:
             self._n += 1
             return self._messages[self._n-1]
-        
+
 ##/////////////////////////////////////////////////////////////////////////
 ## THREADED DOCUMENTER
 ##/////////////////////////////////////////////////////////////////////////
@@ -228,7 +235,7 @@ def document(options, cancel, done):
         log.start_progress('Writing HTML docs to %r' % options['target'])
         html_writer.write(options['target'])
         log.end_progress()
-    
+
         # We're done.
         log.warning('Finished!')
         done[0] = 'done'
@@ -248,7 +255,7 @@ def document(options, cancel, done):
         log.error('Internal error!')
         done[0] ='cancel'
         raise
-    
+
 ##/////////////////////////////////////////////////////////////////////////
 ## GUI
 ##/////////////////////////////////////////////////////////////////////////
@@ -316,7 +323,7 @@ class EpydocGUI:
 
         ## For testing options:
         #self._options_toggle()
-        
+
     def _init_menubar(self):
         menubar = Menu(self._root, borderwidth=2,
                        background=BG_COLOR,
@@ -344,13 +351,13 @@ class EpydocGUI:
                            underline=0, accelerator='Alt-g')
         menubar.add_cascade(label='Run', menu=gomenu, underline=0)
         self._root.config(menu=menubar)
-        
+
     def _init_module_list(self, mainframe):
         mframe1 = Frame(mainframe, relief='groove', border=2,
                         background=BG_COLOR)
         mframe1.pack(side="top", fill='both', expand=1, padx=4, pady=3)
         l = Label(mframe1, text="Modules to document:",
-                  justify='left', **COLOR_CONFIG) 
+                  justify='left', **COLOR_CONFIG)
         l.pack(side='top', fill='none', anchor='nw', expand=0)
         mframe2 = Frame(mframe1, background=BG_COLOR)
         mframe2.pack(side="top", fill='both', expand=1)
@@ -370,13 +377,13 @@ class EpydocGUI:
         self._module_entry.bind('<Return>', self._entry_module)
         self._module_delete = Button(mframe3, text="Remove",
                                      command=self._delete_module,
-                                     **BUTTON_CONFIG) 
+                                     **BUTTON_CONFIG)
         self._module_delete.pack(side='right', expand=0, padx=2)
         self._module_browse = Button(mframe3, text="Browse",
                                      command=self._browse_module,
-                                     **BUTTON_CONFIG) 
+                                     **BUTTON_CONFIG)
         self._module_browse.pack(side='right', expand=0, padx=2)
-        
+
     def _init_progress_bar(self, mainframe):
         pframe1 = Frame(mainframe, background=BG_COLOR)
         pframe1.pack(side="bottom", fill='x', expand=0)
@@ -385,12 +392,12 @@ class EpydocGUI:
                                  **BUTTON_CONFIG)
         self._go_button.pack(side='left', padx=4)
         pframe2 = Frame(pframe1, relief='groove', border=2,
-                        background=BG_COLOR) 
+                        background=BG_COLOR)
         pframe2.pack(side="top", fill='x', expand=1, padx=4, pady=3)
         Label(pframe2, text='Progress:', **COLOR_CONFIG).pack(side='left')
         H = self._H = PROGRESS_HEIGHT
         W = self._W = PROGRESS_WIDTH
-        c = self._canvas = Canvas(pframe2, height=H+DH, width=W+DW, 
+        c = self._canvas = Canvas(pframe2, height=H+DH, width=W+DW,
                                   background=PROGRESS_BG, border=0,
                                   selectborderwidth=0, relief='sunken',
                                   insertwidth=0, insertborderwidth=0,
@@ -408,12 +415,12 @@ class EpydocGUI:
 
         # Set up the messages control frame
         b1 = Button(ctrlframe, text="Messages", justify='center',
-                    command=self._messages_toggle, underline=0, 
-                    highlightthickness=0, activebackground=BG_COLOR, 
-                    border=0, relief='flat', padx=2, pady=0, **COLOR_CONFIG) 
-        b2 = Button(ctrlframe, image=self._downImage, relief='flat', 
+                    command=self._messages_toggle, underline=0,
+                    highlightthickness=0, activebackground=BG_COLOR,
+                    border=0, relief='flat', padx=2, pady=0, **COLOR_CONFIG)
+        b2 = Button(ctrlframe, image=self._downImage, relief='flat',
                     border=0, command=self._messages_toggle,
-                    activebackground=BG_COLOR, **COLOR_CONFIG) 
+                    activebackground=BG_COLOR, **COLOR_CONFIG)
         self._message_button = b2
         self._messages_visible = 0
         b2.pack(side="left")
@@ -454,13 +461,13 @@ class EpydocGUI:
         self._show_messages = IntVar(self._root)
         self._show_messages.set(0)
         Checkbutton(buttons, text='Show Messages', var=self._show_messages,
-                    command=self._update_msg_tags, 
+                    command=self._update_msg_tags,
                     **SHOWMSG_CONFIG).pack(side='left')
         Checkbutton(buttons, text='Show Warnings', var=self._show_warnings,
-                    command=self._update_msg_tags, 
+                    command=self._update_msg_tags,
                     **SHOWWRN_CONFIG).pack(side='left')
         Checkbutton(buttons, text='Show Errors', var=self._show_errors,
-                    command=self._update_msg_tags, 
+                    command=self._update_msg_tags,
                     **SHOWERR_CONFIG).pack(side='left')
         self._update_msg_tags()
 
@@ -484,10 +491,10 @@ class EpydocGUI:
                     border=0, relief='flat',
                     command=self._options_toggle, padx=2,
                     underline=0, pady=0, highlightthickness=0,
-                    activebackground=BG_COLOR, **COLOR_CONFIG) 
-        b2 = Button(ctrlframe, image=self._rightImage, relief='flat', 
+                    activebackground=BG_COLOR, **COLOR_CONFIG)
+        b2 = Button(ctrlframe, image=self._rightImage, relief='flat',
                     border=0, command=self._options_toggle,
-                    activebackground=BG_COLOR, **COLOR_CONFIG) 
+                    activebackground=BG_COLOR, **COLOR_CONFIG)
         self._option_button = b2
         self._options_visible = 0
         b2.pack(side="right")
@@ -497,7 +504,7 @@ class EpydocGUI:
                         background=BG_COLOR)
         oframe2.pack(side="right", fill='both',
                      expand=0, padx=4, pady=3, ipadx=4)
-        
+
         Label(oframe2, text="Project Options", font='helvetica -16',
               **COLOR_CONFIG).pack(anchor='w')
         oframe3 = Frame(oframe2, background=BG_COLOR)
@@ -544,7 +551,7 @@ class EpydocGUI:
         self._out_entry.grid(row=row, column=1, sticky='ew', columnspan=2)
         self._out_browse = Button(oframe3, text="Browse",
                                   command=self._browse_out,
-                                  **BUTTON_CONFIG) 
+                                  **BUTTON_CONFIG)
         self._out_browse.grid(row=row, column=3, sticky='ew', padx=2)
 
         #==================== oframe4 ====================
@@ -660,7 +667,7 @@ class EpydocGUI:
                                    command=self._browse_help,
                                    **BUTTON_CONFIG)
         self._help_browse.grid(row=row, column=3, sticky='ew', padx=2)
-        
+
         from epydoc.docwriter.html_css import STYLESHEETS
         items = list(STYLESHEETS.items())
         def _css_sort(css1, css2):
@@ -685,7 +692,7 @@ class EpydocGUI:
         for (name, (sheet, descr)) in items:
             b = Radiobutton(oframe6, var=css_var, value=name, **CBUTTON_CONFIG)
             b.grid(row=row, column=0, sticky='e')
-            #b = Radiobutton(oframe6, var=private_css_var, value=name, 
+            #b = Radiobutton(oframe6, var=private_css_var, value=name,
             #                text=name, **CBUTTON_CONFIG)
             #b.grid(row=row, column=1, sticky='w')
             l = Label(oframe6, text=descr, **COLOR_CONFIG)
@@ -694,7 +701,7 @@ class EpydocGUI:
         b = Radiobutton(oframe6, var=css_var, value='-other-',
                         **CBUTTON_CONFIG)
         b.grid(row=row, column=0, sticky='e')
-        #b = Radiobutton(oframe6, text='Select File', var=private_css_var, 
+        #b = Radiobutton(oframe6, text='Select File', var=private_css_var,
         #                value='-other-', **CBUTTON_CONFIG)
         #b.grid(row=row, column=1, sticky='w')
         #l = Label(oframe6, text='Select File', **COLOR_CONFIG)
@@ -703,7 +710,7 @@ class EpydocGUI:
         self._css_entry.grid(row=row, column=1, sticky='ew')
         self._css_browse = Button(oframe6, text="Browse",
                                   command=self._browse_css,
-                                  **BUTTON_CONFIG) 
+                                  **BUTTON_CONFIG)
         self._css_browse.grid(row=row, column=2, sticky='ew', padx=2)
 
     def _init_bindings(self):
@@ -712,7 +719,7 @@ class EpydocGUI:
         self._root.bind('<Alt-m>', self._messages_toggle)
         self._root.bind('<F5>', self._go)
         self._root.bind('<Alt-s>', self._go)
-        
+
         self._root.bind('<Control-n>', self._new)
         self._root.bind('<Control-o>', self._open)
         self._root.bind('<Control-s>', self._save)
@@ -765,7 +772,7 @@ class EpydocGUI:
         if not filename: return
         self._init_dir = os.path.dirname(filename)
         self.add_module(filename, check=1)
-        
+
     def _browse_css(self, *e):
         title = 'Select a CSS stylesheet'
         ftypes = [('CSS Stylesheet', '.css'), ('All files', '*')]
@@ -805,7 +812,7 @@ class EpydocGUI:
         if self._root is None: return
 
         # Unload any modules that we've imported
-        for m in list(sys.modules.keys()):
+        for m in sys.modules.keys():
             if m not in self._old_modules: del sys.modules[m]
         self._root.destroy()
         self._root = None
@@ -830,7 +837,7 @@ class EpydocGUI:
                     self._update_messages()
                     self._root.bell()
                     return
-            
+
             # Add the module to the list of modules.
             self._module_list.insert('end', name)
             self._module_list.yview('end')
@@ -838,7 +845,7 @@ class EpydocGUI:
             log.error("Couldn't find %r" % name)
             self._update_messages()
             self._root.bell()
-        
+
     def mainloop(self, *args, **kwargs):
         self._root.mainloop(*args, **kwargs)
 
@@ -867,7 +874,7 @@ class EpydocGUI:
         #else:
         #    options['private_css'] = self._private_css_var.get() or 'default'
         return options
-    
+
     def _go(self, *e):
         if len(self._module_list.get(0,'end')) == 0:
             self._root.bell()
@@ -891,12 +898,12 @@ class EpydocGUI:
 
         # Restore the module list.  This will force re-loading of
         # anything that we're documenting.
-        for m in list(sys.modules.keys()):
+        for m in sys.modules.keys():
             if m not in self._old_modules:
                 del sys.modules[m]
 
         # [xx] Reset caches??
-    
+
         # Start documenting
         start_new_thread(document, args)
 
@@ -1008,18 +1015,18 @@ class EpydocGUI:
         self._filename = prjfile
         try:
             opts = load(open(prjfile, 'r'))
-            
+
             modnames = list(opts.get('modules', []))
             modnames.sort()
             self._module_list.delete(0, 'end')
             for name in modnames:
                 self.add_module(name)
             self._module_entry.delete(0, 'end')
-                
+
             self._name_entry.delete(0, 'end')
             if opts.get('prj_name'):
                 self._name_entry.insert(0, opts['prj_name'])
-                
+
             self._url_entry.delete(0, 'end')
             if opts.get('prj_url'):
                 self._url_entry.insert(0, opts['prj_url'])
@@ -1035,16 +1042,16 @@ class EpydocGUI:
             else:
                 self._help_var.set('-other-')
                 self._help_entry.insert(0, opts.get('help'))
-                
+
             self._out_entry.delete(0, 'end')
             self._out_entry.insert(0, opts.get('target', 'html'))
 
             self._frames_var.set(opts.get('frames', 1))
             self._private_var.set(opts.get('private', 1))
             self._imports_var.set(opts.get('show_imports', 0))
-            
+
             self._css_entry.delete(0, 'end')
-            if opts.get('css', 'default') in list(STYLESHEETS.keys()):
+            if opts.get('css', 'default') in STYLESHEETS.keys():
                 self._css_var.set(opts.get('css', 'default'))
             else:
                 self._css_var.set('-other-')
@@ -1055,11 +1062,11 @@ class EpydocGUI:
             #else:
             #    self._private_css_var.set('-other-')
             #    self._css_entry.insert(0, opts.get('private_css', 'default'))
-                                                   
+
         except Exception as e:
             log.error('Error opening %s: %s' % (prjfile, e))
             self._root.bell()
-        
+
     def _save(self, *e):
         if self._filename is None: return self._saveas()
         try:
@@ -1071,7 +1078,7 @@ class EpydocGUI:
             else:
                 log.error('Error saving %s: %s' % (self._filename, e))
             self._root.bell()
-             
+
     def _saveas(self, *e):
         title = 'Save project as'
         ftypes = [('Project file', '.prj'), ('All files', '*')]
@@ -1112,7 +1119,7 @@ def _error(s):
         if i>0: s = s[:i]+'\n'+s[i+1:]
     print(s, file=sys.stderr)
     sys.exit(1)
-    
+
 def gui():
     global DEBUG
     sys.stderr = sys.__stderr__

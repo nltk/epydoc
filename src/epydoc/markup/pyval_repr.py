@@ -25,6 +25,9 @@ The syntax-highlighted output is encoded using a
 L{ParsedEpytextDocstring}, which can then be used to generate output in
 a variety of formats.
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 # Implementation note: we use exact tests for classes (list, etc)
@@ -35,10 +38,12 @@ import types, re
 import epydoc.apidoc
 from epydoc.util import decode_with_backslashreplace
 from epydoc.util import plaintext_to_html, plaintext_to_latex
-from epydoc.compat import *
 import sre_parse, sre_constants
 
 from epydoc.markup.epytext import Element, ParsedEpytextDocstring
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 def is_re_pattern(pyval):
     return type(pyval).__name__ == 'SRE_Pattern'
@@ -61,7 +66,7 @@ class _ColorizerState:
         self.charpos = 0
         self.lineno = 1
         self.linebreakok = True
-        
+
         #: How good this represention is?
         self.score = 0
 
@@ -76,7 +81,7 @@ class _ColorizerState:
 class _Maxlines(Exception):
     """A control-flow exception that is raised when PyvalColorizer
     exeeds the maximum number of allowed lines."""
-    
+
 class _Linebreak(Exception):
     """A control-flow exception that is raised when PyvalColorizer
     generates a string containing a newline, but the state object's
@@ -97,6 +102,7 @@ def colorize_pyval(pyval, parse_repr=None, min_score=None,
                    linelen=75, maxlines=5, linebreakok=True, sort=True):
     return PyvalColorizer(linelen, maxlines, linebreakok, sort).colorize(
         pyval, parse_repr, min_score)
+
 
 class PyvalColorizer:
     """
@@ -127,13 +133,31 @@ class PyvalColorizer:
     RE_OP_TAG = 're-op'
     RE_FLAGS_TAG = 're-flags'
 
-    ELLIPSIS = Element('code', '...', style='variable-ellipsis')
-    LINEWRAP = Element('symbol', 'crarr')
-    UNKNOWN_REPR = Element('code', '??', style='variable-unknown')
-    
+    ELLIPSIS = Element('code', six.u('...'), style='variable-ellipsis')
+    LINEWRAP = Element('symbol', six.u('crarr'))
+    UNKNOWN_REPR = Element('code', six.u('??'), style='variable-unknown')
+
     GENERIC_OBJECT_RE = re.compile(r'^<.* at 0x[0-9a-f]+>$', re.IGNORECASE)
 
-    ESCAPE_UNICODE = False # should we escape non-ascii unicode chars?
+    if str is six.binary_type:
+        def _str_escape(self, s):
+            return s.encode('string-escape')
+    else:
+        def _str_escape(self, s):
+            def enc(c):
+                if c == "'":
+                    return r"\'"
+                elif ord(c) <= 0xff:
+                    return c.encode('unicode-escape').decode('utf-8')
+                else:
+                    return c
+            return ''.join(map(enc, s))
+
+    def _bytes_escape(self, b):
+        return repr(b)[2:-1]
+
+    def _unicode_escape(self, u):
+        return u
 
     #////////////////////////////////////////////////////////////
     # Entry Point
@@ -178,18 +202,17 @@ class PyvalColorizer:
     def _colorize(self, pyval, state):
         pyval_type = type(pyval)
         state.score += 1
-        
+
         if pyval is None or pyval is True or pyval is False:
-            self._output(str(pyval), self.CONST_TAG, state)
-        elif pyval_type in (int, float, int, complex):
-            self._output(str(pyval), self.NUMBER_TAG, state)
+            self._output(six.text_type(pyval), self.CONST_TAG, state)
+        elif pyval_type in six.integer_types + (float, complex):
+            self._output(six.text_type(pyval), self.NUMBER_TAG, state)
         elif pyval_type is str:
-            self._colorize_str(pyval, state, '', 'string-escape')
-        elif pyval_type is str:
-            if self.ESCAPE_UNICODE:
-                self._colorize_str(pyval, state, 'u', 'unicode-escape')
-            else:
-                self._colorize_str(pyval, state, 'u', None)
+            self._colorize_str(pyval, state, '', self._str_escape)
+        elif pyval_type is six.binary_type:
+            self._colorize_str(pyval, state, six.b('b'), self._bytes_escape)
+        elif pyval_type is six.text_type:
+            self._colorize_str(pyval, state, six.u('u'), self._unicode_escape)
         elif pyval_type is list:
             self._multiline(self._colorize_iter, pyval, state, '[', ']')
         elif pyval_type is tuple:
@@ -201,7 +224,8 @@ class PyvalColorizer:
             self._multiline(self._colorize_iter, self._sort(pyval),
                             state, 'frozenset([', '])')
         elif pyval_type is dict:
-            self._multiline(self._colorize_dict, self._sort(list(pyval.items())),
+            self._multiline(self._colorize_dict,
+                            self._sort(list(pyval.items())),
                             state, '{', '}')
         elif is_re_pattern(pyval):
             self._colorize_re(pyval, state)
@@ -210,29 +234,25 @@ class PyvalColorizer:
                 pyval_repr = repr(pyval)
                 if not isinstance(pyval_repr, str):
                     pyval_repr = str(pyval_repr)
-                pyval_repr_ok = True
             except KeyboardInterrupt:
                 raise
             except:
-                pyval_repr_ok = False
                 state.score -= 100
-
-            if pyval_repr_ok:
+                state.result.append(self.UNKNOWN_REPR)
+            else:
                 if self.GENERIC_OBJECT_RE.match(pyval_repr):
                     state.score -= 5
                 self._output(pyval_repr, None, state)
-            else:
-                state.result.append(self.UNKNOWN_REPR)
 
     def _sort(self, items):
         if not self.sort: return items
         try: return sorted(items)
         except KeyboardInterrupt: raise
         except: return items
-        
+
     def _trim_result(self, result, num_chars):
         while num_chars > 0:
-            if not result: return 
+            if not result: return
             if isinstance(result[-1], Element):
                 assert len(result[-1].children) == 1
                 trim = min(num_chars, len(result[-1].children[0]))
@@ -257,7 +277,7 @@ class PyvalColorizer:
         """
         linebreakok = state.linebreakok
         mark = state.mark()
-        
+
         try:
             state.linebreakok = False
             func(pyval, state, *args)
@@ -268,7 +288,7 @@ class PyvalColorizer:
                 raise
             state.restore(mark)
             func(pyval, state, *args)
-            
+
     def _colorize_iter(self, pyval, state, prefix, suffix):
         self._output(prefix, self.GROUP_TAG, state)
         indent = state.charpos
@@ -288,30 +308,32 @@ class PyvalColorizer:
         for i, (key, val) in enumerate(items):
             if i>=1:
                 if state.linebreakok:
-                    self._output(',', self.COMMA_TAG, state)
-                    self._output('\n'+' '*indent, None, state)
+                    self._output(six.b(','), self.COMMA_TAG, state)
+                    self._output(six.b('\n')+six.b(' ')*indent, None, state)
                 else:
-                    self._output(', ', self.COMMA_TAG, state)
+                    self._output(six.b(', '), self.COMMA_TAG, state)
             self._colorize(key, state)
-            self._output(': ', self.COLON_TAG, state)
+            self._output(six.b(': '), self.COLON_TAG, state)
             self._colorize(val, state)
         self._output(suffix, self.GROUP_TAG, state)
 
-    def _colorize_str(self, pyval, state, prefix, encoding):
+    def _colorize_str(self, pyval, state, prefix, escape_fcn):
+        s = six.b if isinstance(pyval, six.binary_type) else six.u
         # Decide which quote to use.
-        if '\n' in pyval and state.linebreakok: quote = "'''"
-        else: quote = "'"
+        if s('\n') in pyval and state.linebreakok: quote = s("'''")
+        else: quote = s("'")
         # Divide the string into lines.
         if state.linebreakok:
-            lines = pyval.split('\n')
+            lines = pyval.split(s('\n'))
         else:
             lines = [pyval]
         # Open quote.
         self._output(prefix+quote, self.QUOTE_TAG, state)
         # Body
         for i, line in enumerate(lines):
-            if i>0: self._output('\n', None, state)
-            if encoding: line = line.encode(encoding)
+            if i>0: self._output(s('\n'), None, state)
+            if escape_fcn:
+                line = escape_fcn(line)
             self._output(line, self.STRING_TAG, state)
         # Close quote.
         self._output(quote, self.QUOTE_TAG, state)
@@ -320,163 +342,170 @@ class PyvalColorizer:
         # Extract the flag & pattern from the regexp.
         pat, flags = pyval.pattern, pyval.flags
         # If the pattern is a string, decode it to unicode.
-        if isinstance(pat, str):
-            pat = decode_with_backslashreplace(pat)
+        ##if isinstance(pat, six.binary_type):
+        ##    pat = decode_with_backslashreplace(pat)
         # Parse the regexp pattern.
         tree = sre_parse.parse(pat, flags)
         groups = dict([(num,name) for (name,num) in
-                       list(tree.pattern.groupdict.items())])
+                       tree.pattern.groupdict.items()])
         # Colorize it!
-        self._output("re.compile(r'", None, state)
-        self._colorize_re_flags(tree.pattern.flags, state)
+        self._output(six.b("re.compile(r'"), None, state)
+        self._colorize_re_flags(flags, state)
         self._colorize_re_tree(tree, state, True, groups)
-        self._output("')", None, state)
+        self._output(six.b("')"), None, state)
 
     def _colorize_re_flags(self, flags, state):
         if flags:
             flags = [c for (c,n) in sorted(sre_parse.FLAGS.items())
                      if (n&flags)]
-            flags = '(?%s)' % ''.join(flags)
+            flags = six.b('(?%s)') % six.b(''.join(flags))
             self._output(flags, self.RE_FLAGS_TAG, state)
 
     def _colorize_re_tree(self, tree, state, noparen, groups):
         assert noparen in (True, False)
-        if len(tree) > 1 and not noparen:
-            self._output('(', self.RE_GROUP_TAG, state)
+        try:
+            if len(tree) > 1 and not noparen:
+                self._output(six.b('('), self.RE_GROUP_TAG, state)
+        except TypeError:
+            print("tree: %r" % tree)
+            raise
         for elt in tree:
             op = elt[0]
             args = elt[1]
-    
+
             if op == sre_constants.LITERAL:
-                c = chr(args)
+                c = six.unichr(args)
                 # Add any appropriate escaping.
-                if c in '.^$\\*+?{}[]|()\'': c = '\\'+c
-                elif c == '\t': c = '\\t'
-                elif c == '\r': c = '\\r'
-                elif c == '\n': c = '\\n'
-                elif c == '\f': c = '\\f'
-                elif c == '\v': c = '\\v'
-                elif ord(c) > 0xffff: c = r'\U%08x' % ord(c)
-                elif ord(c) > 0xff: c = r'\u%04x' % ord(c)
-                elif ord(c)<32 or ord(c)>=127: c = r'\x%02x' % ord(c)
+                if c in six.u('.^$\\*+?{}[]|()\''): c = six.b('\\') + six.b(c)
+                elif c == six.u('\t'): c = six.b('\\t')
+                elif c == six.u('\r'): c = six.b('\\r')
+                elif c == six.u('\n'): c = six.b('\\n')
+                elif c == six.u('\f'): c = six.b('\\f')
+                elif c == six.u('\v'): c = six.b('\\v')
+                elif ord(c) > 0xffff: c = six.b(r'\U%08x') % ord(c)
+                elif ord(c) > 0xff: c = six.b(r'\u%04x') % ord(c)
+                elif ord(c)<32 or ord(c)>=127: c = six.b(r'\x%02x') % ord(c)
                 self._output(c, self.RE_CHAR_TAG, state)
-            
+
             elif op == sre_constants.ANY:
-                self._output('.', self.RE_CHAR_TAG, state)
-                
+                self._output(six.b('.'), self.RE_CHAR_TAG, state)
+
             elif op == sre_constants.BRANCH:
                 if args[0] is not None:
                     raise ValueError('Branch expected None arg but got %s'
                                      % args[0])
                 for i, item in enumerate(args[1]):
                     if i > 0:
-                        self._output('|', self.RE_OP_TAG, state)
+                        self._output(six.b('|'), self.RE_OP_TAG, state)
                     self._colorize_re_tree(item, state, True, groups)
-                
+
             elif op == sre_constants.IN:
                 if (len(args) == 1 and args[0][0] == sre_constants.CATEGORY):
                     self._colorize_re_tree(args, state, False, groups)
                 else:
-                    self._output('[', self.RE_GROUP_TAG, state)
+                    self._output(six.b('['), self.RE_GROUP_TAG, state)
                     self._colorize_re_tree(args, state, True, groups)
-                    self._output(']', self.RE_GROUP_TAG, state)
-                    
+                    self._output(six.b(']'), self.RE_GROUP_TAG, state)
+
             elif op == sre_constants.CATEGORY:
-                if args == sre_constants.CATEGORY_DIGIT: val = r'\d'
-                elif args == sre_constants.CATEGORY_NOT_DIGIT: val = r'\D'
-                elif args == sre_constants.CATEGORY_SPACE: val = r'\s'
-                elif args == sre_constants.CATEGORY_NOT_SPACE: val = r'\S'
-                elif args == sre_constants.CATEGORY_WORD: val = r'\w'
-                elif args == sre_constants.CATEGORY_NOT_WORD: val = r'\W'
+                if args == sre_constants.CATEGORY_DIGIT: val = six.b(r'\d')
+                elif args == sre_constants.CATEGORY_NOT_DIGIT: val = six.b(r'\D')
+                elif args == sre_constants.CATEGORY_SPACE: val = six.b(r'\s')
+                elif args == sre_constants.CATEGORY_NOT_SPACE: val = six.b(r'\S')
+                elif args == sre_constants.CATEGORY_WORD: val = six.b(r'\w')
+                elif args == sre_constants.CATEGORY_NOT_WORD: val = six.b(r'\W')
                 else: raise ValueError('Unknown category %s' % args)
                 self._output(val, self.RE_CHAR_TAG, state)
-                
+
             elif op == sre_constants.AT:
-                if args == sre_constants.AT_BEGINNING_STRING: val = r'\A'
-                elif args == sre_constants.AT_BEGINNING: val = r'^'
-                elif args == sre_constants.AT_END: val = r'$'
-                elif args == sre_constants.AT_BOUNDARY: val = r'\b'
-                elif args == sre_constants.AT_NON_BOUNDARY: val = r'\B'
-                elif args == sre_constants.AT_END_STRING: val = r'\Z'
+                if args == sre_constants.AT_BEGINNING_STRING: val = six.b(r'\A')
+                elif args == sre_constants.AT_BEGINNING: val = six.b(r'^')
+                elif args == sre_constants.AT_END: val = six.b(r'$')
+                elif args == sre_constants.AT_BOUNDARY: val = six.b(r'\b')
+                elif args == sre_constants.AT_NON_BOUNDARY: val = six.b(r'\B')
+                elif args == sre_constants.AT_END_STRING: val = six.b(r'\Z')
                 else: raise ValueError('Unknown position %s' % args)
                 self._output(val, self.RE_CHAR_TAG, state)
-                
+
             elif op in (sre_constants.MAX_REPEAT, sre_constants.MIN_REPEAT):
                 minrpt = args[0]
                 maxrpt = args[1]
                 if maxrpt == sre_constants.MAXREPEAT:
-                    if minrpt == 0:   val = '*'
-                    elif minrpt == 1: val = '+'
-                    else: val = '{%d,}' % (minrpt)
+                    if minrpt == 0:   val = six.b('*')
+                    elif minrpt == 1: val = six.b('+')
+                    else: val = six.b('{%d,}') % (minrpt)
                 elif minrpt == 0:
-                    if maxrpt == 1: val = '?'
-                    else: val = '{,%d}' % (maxrpt)
+                    if maxrpt == 1: val = six.b('?')
+                    else: val = six.b('{,%d}') % (maxrpt)
                 elif minrpt == maxrpt:
-                    val = '{%d}' % (maxrpt)
+                    val = six.b('{%d}') % (maxrpt)
                 else:
-                    val = '{%d,%d}' % (minrpt, maxrpt)
+                    val = six.b('{%d,%d}') % (minrpt, maxrpt)
                 if op == sre_constants.MIN_REPEAT:
-                    val += '?'
-                    
+                    val += six.b('?')
+
                 self._colorize_re_tree(args[2], state, False, groups)
                 self._output(val, self.RE_OP_TAG, state)
-                
+
             elif op == sre_constants.SUBPATTERN:
                 if args[0] is None:
-                    self._output('(?:', self.RE_GROUP_TAG, state)
+                    self._output(six.b('(?:'), self.RE_GROUP_TAG, state)
                 elif args[0] in groups:
-                    self._output('(?P<', self.RE_GROUP_TAG, state)
+                    self._output(six.b('(?P<'), self.RE_GROUP_TAG, state)
                     self._output(groups[args[0]], self.RE_REF_TAG, state)
-                    self._output('>', self.RE_GROUP_TAG, state)
-                elif isinstance(args[0], int):
+                    self._output(six.b('>'), self.RE_GROUP_TAG, state)
+                elif isinstance(args[0], six.integer_types):
                     # This is cheating:
-                    self._output('(', self.RE_GROUP_TAG, state)
+                    self._output(six.b('('), self.RE_GROUP_TAG, state)
                 else:
-                    self._output('(?P<', self.RE_GROUP_TAG, state)
+                    self._output(six.b('(?P<'), self.RE_GROUP_TAG, state)
                     self._output(args[0], self.RE_REF_TAG, state)
-                    self._output('>', self.RE_GROUP_TAG, state)
-                self._colorize_re_tree(args[1], state, True, groups)
-                self._output(')', self.RE_GROUP_TAG, state)
-    
+                    self._output(six.b('>'), self.RE_GROUP_TAG, state)
+                if six.PY2:
+                    self._colorize_re_tree(args[1], state, True, groups)
+                else:
+                    self._colorize_re_tree(args[3], state, True, groups)
+                self._output(six.b(')'), self.RE_GROUP_TAG, state)
+
             elif op == sre_constants.GROUPREF:
-                self._output('\\%d' % args, self.RE_REF_TAG, state)
-    
+                self._output(six.b('\\%d') % args, self.RE_REF_TAG, state)
+
             elif op == sre_constants.RANGE:
                 self._colorize_re_tree( ((sre_constants.LITERAL, args[0]),),
                                         state, False, groups )
-                self._output('-', self.RE_OP_TAG, state)
+                self._output(six.b('-'), self.RE_OP_TAG, state)
                 self._colorize_re_tree( ((sre_constants.LITERAL, args[1]),),
                                         state, False, groups )
-                
+
             elif op == sre_constants.NEGATE:
-                self._output('^', self.RE_OP_TAG, state)
-    
+                self._output(six.b('^'), self.RE_OP_TAG, state)
+
             elif op == sre_constants.ASSERT:
                 if args[0] > 0:
-                    self._output('(?=', self.RE_GROUP_TAG, state)
+                    self._output(six.b('(?='), self.RE_GROUP_TAG, state)
                 else:
-                    self._output('(?<=', self.RE_GROUP_TAG, state)
+                    self._output(six.b('(?<='), self.RE_GROUP_TAG, state)
                 self._colorize_re_tree(args[1], state, True, groups)
-                self._output(')', self.RE_GROUP_TAG, state)
-                               
+                self._output(six.b(')'), self.RE_GROUP_TAG, state)
+
             elif op == sre_constants.ASSERT_NOT:
                 if args[0] > 0:
-                    self._output('(?!', self.RE_GROUP_TAG, state)
+                    self._output(six.b('(?!'), self.RE_GROUP_TAG, state)
                 else:
-                    self._output('(?<!', self.RE_GROUP_TAG, state)
+                    self._output(six.b('(?<!'), self.RE_GROUP_TAG, state)
                 self._colorize_re_tree(args[1], state, True, groups)
-                self._output(')', self.RE_GROUP_TAG, state)
-    
+                self._output(six.b(')'), self.RE_GROUP_TAG, state)
+
             elif op == sre_constants.NOT_LITERAL:
-                self._output('[^', self.RE_GROUP_TAG, state)
+                self._output(six.b('[^'), self.RE_GROUP_TAG, state)
                 self._colorize_re_tree( ((sre_constants.LITERAL, args),),
                                         state, False, groups )
-                self._output(']', self.RE_GROUP_TAG, state)
+                self._output(six.b(']'), self.RE_GROUP_TAG, state)
             else:
                 log.error("Error colorizing regexp: unknown elt %r" % elt)
-        if len(tree) > 1 and not noparen: 
-            self._output(')', self.RE_GROUP_TAG, state)
-                           
+        if len(tree) > 1 and not noparen:
+            self._output(six.b(')'), self.RE_GROUP_TAG, state)
+
     #////////////////////////////////////////////////////////////
     # Output function
     #////////////////////////////////////////////////////////////
@@ -489,13 +518,13 @@ class PyvalColorizer:
         `self.maxlines`, then raise a `_Maxlines` exception.
         """
         # Make sure the string is unicode.
-        if isinstance(s, str):
+        if isinstance(s, six.binary_type):
             s = decode_with_backslashreplace(s)
-        
+
         # Split the string into segments.  The first segment is the
         # content to add to the current line, and the remaining
         # segments are new lines.
-        segments = s.split('\n')
+        segments = s.split(six.u('\n'))
 
         for i, segment in enumerate(segments):
             # If this isn't the first segment, then add a newline to
@@ -505,7 +534,7 @@ class PyvalColorizer:
                     raise _Maxlines()
                 if not state.linebreakok:
                     raise _Linebreak()
-                state.result.append('\n')
+                state.result.append(six.u('\n'))
                 state.lineno += 1
                 state.charpos = 0
 

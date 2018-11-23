@@ -67,6 +67,9 @@ API Linking Options::
 .. _Docutils: http://docutils.sourceforge.net/
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 # $Id: xlink.py 1719 2008-02-15 01:00:39Z edloper $
 __version__ = "$Revision: 1719 $"[11:-2]
 __author__ = "Daniele Varrazzo"
@@ -78,6 +81,9 @@ import sys
 from optparse import OptionValueError
 
 from epydoc import log
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 class UrlGenerator:
     """
@@ -247,7 +253,7 @@ class DocUrlGenerator(UrlGenerator):
         """
         self._filename = str(f)
 
-        if isinstance(f, str):
+        if isinstance(f, six.string_types):
             f = open(f)
 
         self.load_records(self._iter_tuples(f))

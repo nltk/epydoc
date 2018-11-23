@@ -21,6 +21,10 @@ to progress displays; but also with respect to message blocks).
 
 @group Message Severity Levels: DEBUG, INFO, WARNING, ERROR, FATAL
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 __docformat__ = 'epytext en'
 
 import sys, os
@@ -40,7 +44,7 @@ class Logger:
     An abstract base class that defines the interface for X{loggers},
     which are used by epydoc to report information back to the user.
     Loggers are responsible for tracking two types of information:
-    
+
         - Messages, such as warnings and errors.
         - Progress on the current task.
 
@@ -73,7 +77,7 @@ class Logger:
     #////////////////////////////////////////////////////////////
     # Message blocks
     #////////////////////////////////////////////////////////////
-    
+
     def start_block(self, header):
         """
         Start a new message block.  Any calls to L{info()},
@@ -84,7 +88,7 @@ class Logger:
         blocks), but every call to C{start_block} I{must} be balanced
         by a call to C{end_block}.
         """
-        
+
     def end_block(self):
         """
         End a warning block.  See L{start_block} for details.
@@ -93,7 +97,7 @@ class Logger:
     #////////////////////////////////////////////////////////////
     # Progress bar
     #////////////////////////////////////////////////////////////
-    
+
     def start_progress(self, header=None):
         """
         Begin displaying progress for a new task.  C{header} is a
@@ -112,7 +116,7 @@ class Logger:
     def progress(self, percent, message=''):
         """
         Update the progress display.
-        
+
         @param percent: A float from 0.0 to 1.0, indicating how much
             progress has been made.
         @param message: A message indicating the most recent action
@@ -124,7 +128,7 @@ class SimpleLogger(Logger):
         self.threshold = threshold
     def log(self, level, message):
         if level >= self.threshold: print(message)
-        
+
 ######################################################################
 # Logger Registry
 ######################################################################
@@ -149,55 +153,55 @@ def remove_logger(logger, close_logger=True):
 ######################################################################
 # Logging Functions
 ######################################################################
-# The following methods all just delegate to the corresponding 
+# The following methods all just delegate to the corresponding
 # methods in the Logger class (above) for each registered logger.
 
 def fatal(*messages):
     """Display the given fatal message."""
     message = ' '.join(['%s' % (m,) for m in messages])
     for logger in _loggers: logger.log(FATAL, message)
-    
+
 def error(*messages):
     """Display the given error message."""
     message = ' '.join(['%s' % (m,) for m in messages])
     for logger in _loggers: logger.log(ERROR, message)
-    
+
 def warning(*messages):
     """Display the given warning message."""
     message = ' '.join(['%s' % (m,) for m in messages])
     for logger in _loggers: logger.log(WARNING, message)
-    
+
 def docstring_warning(*messages):
     """Display the given docstring warning message."""
     message = ' '.join(['%s' % (m,) for m in messages])
     for logger in _loggers: logger.log(DOCSTRING_WARNING, message)
-    
+
 def info(*messages):
     """Display the given informational message."""
     message = ' '.join(['%s' % (m,) for m in messages])
     for logger in _loggers: logger.log(INFO, message)
-    
+
 def debug(*messages):
     """Display the given debugging message."""
     message = ' '.join(['%s' % (m,) for m in messages])
     for logger in _loggers: logger.log(DEBUG, message)
-    
+
 def start_block(header):
     for logger in _loggers: logger.start_block(header)
 start_block.__doc__ = Logger.start_block.__doc__
-    
+
 def end_block():
     for logger in _loggers: logger.end_block()
 end_block.__doc__ = Logger.end_block.__doc__
-    
+
 def start_progress(header=None):
     for logger in _loggers: logger.start_progress(header)
 start_progress.__doc__ = Logger.start_progress.__doc__
-    
+
 def end_progress():
     for logger in _loggers: logger.end_progress()
 end_progress.__doc__ = Logger.end_progress.__doc__
-    
+
 def progress(percent, message=''):
     for logger in _loggers: logger.progress(percent, '%s' % message)
 progress.__doc__ = Logger.progress.__doc__

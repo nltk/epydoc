@@ -63,6 +63,9 @@ the names of possible consolidated fields; and the values are the
 names of the field tags that should be used for individual entries in
 the list.
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 # Imports
@@ -84,7 +87,6 @@ import docutils.transforms.frontmatter
 import docutils.transforms
 import docutils.utils
 
-from epydoc.compat import * # Backwards compatibility
 from epydoc.markup import *
 from epydoc.apidoc import ModuleDoc, ClassDoc
 from epydoc.docwriter.dotgraph import *
@@ -158,7 +160,7 @@ class ParsedRstDocstring(ParsedDocstring):
         @type document: C{docutils.nodes.document}
         """
         self._document = document
-        
+
         # The default document reporter and transformer are not
         # pickle-able; so replace them with stubs that are.
         document.reporter = OptimizedReporter(
@@ -190,7 +192,7 @@ class ParsedRstDocstring(ParsedDocstring):
 #             child.walkabout(visitor)
 #             result.append(visitor.get_tree_copy())
 #         return ParsedRstDocstring(result)
-        
+
     def to_html(self, docstring_linker, directory=None,
                 docindex=None, context=None, **options):
         # Inherit docs
@@ -209,7 +211,7 @@ class ParsedRstDocstring(ParsedDocstring):
 
     def to_plaintext(self, docstring_linker, **options):
         # This is should be replaced by something better:
-        return self._document.astext() 
+        return self._document.astext()
 
     def __repr__(self): return '<ParsedRstDocstring: ...>'
 
@@ -243,7 +245,7 @@ class _EpydocReader(ApiLinkReader):
     def __init__(self, errors):
         self._errors = errors
         ApiLinkReader.__init__(self)
-        
+
     def new_document(self):
         document = new_document(self.source.source_path, self.settings)
         # Capture all warning messages.
@@ -264,7 +266,7 @@ class _EpydocReader(ApiLinkReader):
                        for c in error])
 
         self._errors.append(ParseError(msg, linenum, is_fatal))
-        
+
 class _DocumentPseudoWriter(Writer):
     """
     A pseudo-writer for the docutils framework, that can be used to
@@ -279,10 +281,10 @@ class _DocumentPseudoWriter(Writer):
     def __init__(self):
         self.document = None
         Writer.__init__(self)
-        
+
     def translate(self):
         self.output = ''
-        
+
 class _SummaryExtractor(NodeVisitor):
     """
     A docutils node visitor that extracts the first sentence from
@@ -292,10 +294,10 @@ class _SummaryExtractor(NodeVisitor):
         NodeVisitor.__init__(self, document)
         self.summary = None
         self.other_docs = None
-        
+
     def visit_document(self, node):
         self.summary = None
-        
+
     _SUMMARY_RE = re.compile(r'(\s*[\w\W]*?\.)(\s|$)')
     def visit_paragraph(self, node):
         if self.summary is not None:
@@ -308,10 +310,11 @@ class _SummaryExtractor(NodeVisitor):
         # Extract the first sentence.
         for child in node:
             if isinstance(child, docutils.nodes.Text):
-                m = self._SUMMARY_RE.match(child.data)
+                text = child.astext()
+                m = self._SUMMARY_RE.match(text)
                 if m:
                     summary_pieces.append(docutils.nodes.Text(m.group(1)))
-                    other = child.data[m.end():]
+                    other = text[m.end():]
                     if other and not other.isspace():
                         self.other_docs = True
                     break
@@ -337,13 +340,13 @@ class _TermsExtractor(NodeVisitor):
     """
     def __init__(self, document):
         NodeVisitor.__init__(self, document)
-        
+
         self.terms = None
         """
         The terms currently found.
         @type: C{list}
         """
-        
+
     def visit_document(self, node):
         self.terms = []
         self._in_term = False
@@ -376,14 +379,14 @@ class _SplitFieldsTranslator(NodeVisitor):
     @ivar fields: The fields of the most recently walked document.
     @type fields: C{list} of L{Field<markup.Field>}
     """
-    
+
     ALLOW_UNMARKED_ARG_IN_CONSOLIDATED_FIELD = True
     """If true, then consolidated fields are not required to mark
     arguments with C{`backticks`}.  (This is currently only
     implemented for consolidated fields expressed as definition lists;
     consolidated fields expressed as unordered lists still require
     backticks for now."""
-    
+
     def __init__(self, document, errors):
         NodeVisitor.__init__(self, document)
         self._errors = errors
@@ -406,7 +409,7 @@ class _SplitFieldsTranslator(NodeVisitor):
         # Handle special fields:
         fbody = node[1]
         if arg is None:
-            for (list_tag, entry_tag) in list(CONSOLIDATED_FIELDS.items()):
+            for (list_tag, entry_tag) in CONSOLIDATED_FIELDS.items():
                 if tagname.lower() == list_tag:
                     try:
                         self.handle_consolidated_field(fbody, entry_tag)
@@ -416,14 +419,14 @@ class _SplitFieldsTranslator(NodeVisitor):
                         estr += '"%s" - %s' % (tagname, e)
                         self._errors.append(ParseError(estr, node.line,
                                                        is_fatal=0))
-                        
+
                         # Use a @newfield to let it be displayed as-is.
                         if tagname.lower() not in self._newfields:
                             newfield = Field('newfield', tagname.lower(),
                                              parse(tagname, 'plaintext'))
                             self.fields.append(newfield)
                             self._newfields[tagname.lower()] = 1
-                        
+
         self._add_field(tagname, arg, fbody)
 
     def _add_field(self, tagname, arg, fbody):
@@ -431,7 +434,7 @@ class _SplitFieldsTranslator(NodeVisitor):
         for child in fbody: field_doc.append(child)
         field_pdoc = ParsedRstDocstring(field_doc)
         self.fields.append(Field(tagname, arg, field_pdoc))
-            
+
     def visit_field_list(self, node):
         # Remove the field list from the tree.  The visitor will still walk
         # over the node's children.
@@ -465,7 +468,7 @@ class _SplitFieldsTranslator(NodeVisitor):
                      "description.")
         for item in items:
             n += 1
-            if item.tagname != 'list_item' or len(item) == 0: 
+            if item.tagname != 'list_item' or len(item) == 0:
                 raise ValueError('bad bulleted list (bad child %d).' % n)
             if item[0].tagname != 'paragraph':
                 if item[0].tagname == 'definition_list':
@@ -474,7 +477,7 @@ class _SplitFieldsTranslator(NodeVisitor):
                                       'wrong).') % n)
                 else:
                     raise ValueError(_BAD_ITEM % n)
-            if len(item[0]) == 0: 
+            if len(item[0]) == 0:
                 raise ValueError(_BAD_ITEM % n)
             if item[0][0].tagname != 'title_reference':
                 raise ValueError(_BAD_ITEM % n)
@@ -492,15 +495,15 @@ class _SplitFieldsTranslator(NodeVisitor):
             # Remove the separating ":", if present
             if (len(fbody[0]) > 0 and
                 isinstance(fbody[0][0], docutils.nodes.Text)):
-                child = fbody[0][0]
-                if child.data[:1] in ':-':
-                    child.data = child.data[1:].lstrip()
-                elif child.data[:2] in (' -', ' :'):
-                    child.data = child.data[2:].lstrip()
+                text = fbody[0][0].astext()
+                if text[:1] in ':-':
+                    fbody[0][0] = docutils.nodes.Text(text[1:].lstrip())
+                elif text[:2] in (' -', ' :'):
+                    fbody[0][0] = docutils.nodes.Text(text[2:].lstrip())
 
             # Wrap the field body, and add a new field
             self._add_field(tagname, arg, fbody)
-        
+
     def handle_consolidated_definition_list(self, items, tagname):
         # Check the list contents.
         n = 0
@@ -542,7 +545,7 @@ def latex_head_prefix():
     document = new_document('<fake>')
     translator = _EpydocLaTeXTranslator(document)
     return translator.head_prefix
-    
+
 _TARGET_RE = re.compile(r'^(.*?)\s*<(?:URI:|URL:)?([^<>]+)>$')
 
 class _EpydocDocumentClass:
@@ -563,11 +566,11 @@ class _EpydocLaTeXTranslator(LaTeXTranslator):
         if self.settings is None:
             settings = OptionParser([LaTeXWriter()]).get_default_values()
             settings.output_encoding = 'utf-8'
-            
+
             # This forces eg \EpydocUserSection rather than
             # \EpydocUserSEction*:
             settings.use_latex_toc = True
-            
+
             self.__class__.settings = settings
         document.settings = self.settings
 
@@ -595,11 +598,11 @@ class _EpydocLaTeXTranslator(LaTeXTranslator):
 
     def visit_dotgraph(self, node):
         if self._directory is None: raise SkipNode() # [xx] warning?
-        
+
         # Generate the graph.
         graph = node.graph(self._docindex, self._context, self._linker)
         if graph is None: raise SkipNode()
-        
+
         # Write the graph.
         self.body.append(graph.to_latex(self._directory))
         raise SkipNode()
@@ -615,7 +618,7 @@ class _EpydocLaTeXTranslator(LaTeXTranslator):
     def visit_admonition(self, node, name=''):
         self.body.append('\\begin{reSTadmonition}[%s]\n' %
                          self.language.labels[name])
-        
+
     def depart_admonition(self, node=None):
         self.body.append('\\end{reSTadmonition}\n');
 
@@ -627,7 +630,7 @@ class _EpydocHTMLTranslator(HTMLTranslator):
         self._directory = directory
         self._docindex = docindex
         self._context = context
-        
+
         # Set the document's settings.
         if self.settings is None:
             settings = OptionParser([HTMLWriter()]).get_default_values()
@@ -655,7 +658,7 @@ class _EpydocHTMLTranslator(HTMLTranslator):
 
     def visit_document(self, node): pass
     def depart_document(self, node): pass
-        
+
     def starttag(self, node, tagname, suffix='\n', **attributes):
         """
         This modified version of starttag makes a few changes to HTML
@@ -676,7 +679,7 @@ class _EpydocHTMLTranslator(HTMLTranslator):
         # iterate through attributes one at a time because some
         # versions of docutils don't case-normalize attributes.
         for attr_dict in attr_dicts:
-            for (key, val) in list(attr_dict.items()):
+            for (key, val) in attr_dict.items():
                 # Prefix all CSS classes with "rst-"; and prefix all
                 # names with "rst-" to avoid conflicts.
                 if key.lower() in ('class', 'id', 'name'):
@@ -695,17 +698,17 @@ class _EpydocHTMLTranslator(HTMLTranslator):
         if re.match(r'^h\d+$', tagname):
             attributes['class'] = ' '.join([attributes.get('class',''),
                                             'heading']).strip()
-        
+
         return HTMLTranslator.starttag(self, node, tagname, suffix,
                                        **attributes)
 
     def visit_dotgraph(self, node):
         if self._directory is None: raise SkipNode() # [xx] warning?
-        
+
         # Generate the graph.
         graph = node.graph(self._docindex, self._context, self._linker)
         if graph is None: raise SkipNode()
-        
+
         # Write the graph.
         self.body.append(graph.to_html(self._directory))
         raise SkipNode()
@@ -746,7 +749,7 @@ def python_code_directive(name, arguments, options, content, lineno,
     text = '\n'.join(content)
     node = docutils.nodes.doctest_block(text, text, codeblock=True)
     return [ node ]
-    
+
 python_code_directive.arguments = (0, 0, 0)
 python_code_directive.content = True
 
@@ -802,7 +805,7 @@ def _dir_option(argument):
     if argument == 'up': return 'BT'
     raise ValueError('%r unknown; choose from left, right, up, down' %
                      argument)
- 
+
 def digraph_directive(name, arguments, options, content, lineno,
                       content_offset, block_text, state, state_machine):
     """
@@ -866,7 +869,7 @@ def _construct_classtree(docindex, context, linker, arguments, options):
         log.warning("Could not construct class tree: you must "
                     "specify one or more base classes.")
         return None
-        
+
     return class_tree_graph(bases, linker, context, **options)
 
 def packagetree_directive(name, arguments, options, content, lineno,
@@ -945,4 +948,4 @@ def _construct_callgraph(docindex, context, linker, arguments, options):
     else:
         docs = [context]
     return call_graph(docs, docindex, linker, context, **options)
-  
+

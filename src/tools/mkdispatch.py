@@ -6,6 +6,9 @@ For each file name in argv, detect title names and print a directive
 referring to it as anchor in an html file.
 """
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 # $Id: mkdispatch.py 1771 2008-02-24 03:42:42Z edloper $
 __version__ = "$Revision: 1771 $"[11:-2]
 __author__ = "Daniele Varrazzo"
@@ -20,10 +23,10 @@ def parse_pairs(fn):
     prev = None
     for curr in open(fn):
         curr = curr.rstrip()
-        if prev is not None: 
+        if prev is not None:
             if curr and curr[0] in "'^-=~":
                 if curr == curr[0] * len(curr):
-                    rv.append(".. _%s: %s#%s" % 
+                    rv.append(".. _%s: %s#%s" %
                         (prev, outfile, get_anchor(prev)))
         prev = curr
 
@@ -41,7 +44,7 @@ def get_anchor(s):
     # IndexErrors are expected to test for what else include in the map
     try:
         return "".join(map(charmap.__getitem__, s))
-    except KeyError, e:
+    except KeyError as e:
         sys.stderr.write('Unexpected char while getting anchor for %r: %s\n'
                          % (s, e))
         sys.exit(-1)
@@ -49,5 +52,5 @@ def get_anchor(s):
 if __name__ == '__main__':
     for fn in sys.argv[1:]:
         for dir in parse_pairs(fn):
-            print dir
+            print(dir)
 

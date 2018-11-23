@@ -47,6 +47,9 @@ be configured to explore the contents of C{while} and C{for} blocks.
        by replacing process_line with a dispatch table that can be
        customized (similarly to C{docintrospector.register_introspector()}).
 """
+
+from __future__ import absolute_import
+
 __docformat__ = 'epytext en'
 
 ######################################################################
@@ -64,12 +67,12 @@ import codecs
 # API documentation encoding:
 from epydoc.apidoc import *
 # For looking up the docs of builtins:
-import builtins, exceptions
-import epydoc.docintrospecter 
+import epydoc.docintrospecter
 # Misc utility functions:
 from epydoc.util import *
-# Backwards compatibility
-from epydoc.compat import *
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 ######################################################################
 ## Doc Parser
@@ -92,7 +95,7 @@ C{ValueDoc} objects.
 # Configuration Constants
 #////////////////////////////////////////////////////////////
 
-#{ Configuration Constants: Control Flow 
+#{ Configuration Constants: Control Flow
 PARSE_TRY_BLOCKS = True
 """Should the contents of C{try} blocks be examined?"""
 PARSE_EXCEPT_BLOCKS = True
@@ -210,9 +213,9 @@ def parse_docs(filename=None, name=None, context=None, is_script=False):
     """
     # Always introspect __builtins__ & exceptions (e.g., in case
     # they're used as base classes.)
-    epydoc.docintrospecter.introspect_docs(__builtin__)
-    epydoc.docintrospecter.introspect_docs(exceptions)
-    
+    epydoc.docintrospecter.introspect_docs(six.moves.builtins)
+    epydoc.docintrospecter.introspect_docs(six.moves.exceptions)
+
     # If our input is a python object name, then delegate to
     # _find().
     if filename is None and name is not None:
@@ -236,7 +239,7 @@ def parse_docs(filename=None, name=None, context=None, is_script=False):
         # Check the cache, first.
         if filename in _moduledoc_cache:
             return _moduledoc_cache[filename]
-        
+
         log.info("Parsing %s" % filename)
 
         # If the context wasn't provided, then check if the file is in
@@ -272,7 +275,7 @@ def parse_docs(filename=None, name=None, context=None, is_script=False):
         # Set the module's __path__ to its default value.
         if is_pkg:
             module_doc.path = [os.path.split(module_doc.filename)[0]]
-        
+
         # Add this module to the parent package's list of submodules.
         if context is not None:
             context.submodules.append(module_doc)
@@ -310,7 +313,7 @@ def _parse_package(package_dir):
     parent_doc = _parse_package(parent_dir)
     package_file = os.path.join(package_dir, '__init__')
     return parse_docs(filename=package_file, context=parent_doc)
-        
+
 # Special vars:
 # C{__docformat__}, C{__all__}, and C{__path__}.
 def handle_special_module_vars(module_doc):
@@ -320,13 +323,13 @@ def handle_special_module_vars(module_doc):
         try: module_doc.docformat = parse_string(toktree)
         except: pass
         del module_doc.variables['__docformat__']
-            
+
     # If __all__ is defined, parse its value.
     toktree = _module_var_toktree(module_doc, '__all__')
     if toktree is not None:
         try:
             public_names = set(parse_string_list(toktree))
-            for name, var_doc in list(module_doc.variables.items()):
+            for name, var_doc in module_doc.variables.items():
                 if name in public_names:
                     var_doc.is_public = True
                     if not isinstance(var_doc, ModuleDoc):
@@ -335,7 +338,7 @@ def handle_special_module_vars(module_doc):
                     var_doc.is_public = False
         except ParseError:
             # If we couldn't parse the list, give precedence to introspection.
-            for name, var_doc in list(module_doc.variables.items()):
+            for name, var_doc in module_doc.variables.items():
                 if not isinstance(var_doc, ModuleDoc):
                     var_doc.is_imported = UNKNOWN
         del module_doc.variables['__all__']
@@ -411,11 +414,11 @@ def _is_submodule_import_var(module_doc, var_name):
     full_var_name = DottedName(module_doc.canonical_name, var_name)
     return (var_doc is not None and
             var_doc.imported_from == full_var_name)
-    
+
 def _find_in_namespace(name, namespace_doc):
     if name[0] not in namespace_doc.variables:
         raise ImportError('Could not find value')
-    
+
     # Look up the variable in the namespace.
     var_doc = namespace_doc.variables[name[0]]
     if var_doc.value is UNKNOWN:
@@ -439,7 +442,7 @@ def _find_in_namespace(name, namespace_doc):
     # Otherwise, we ran into a dead end.
     else:
         raise ImportError('Could not find value')
-    
+
 def _get_filename(identifier, path=None):
     if path is UNKNOWN: path = None
     try:
@@ -483,10 +486,10 @@ def process_file(module_doc):
     """
     # Keep track of the current line number:
     lineno = None
-    
+
     # Use this list to collect the tokens on a single logical line:
     line_toks = []
-    
+
     # This list contains one APIDoc for each indentation level.
     # The first element is the APIDoc for the module, and each
     # subsequent element is the APIDoc for the object at that
@@ -529,27 +532,33 @@ def process_file(module_doc):
 
     # The token-eating loop:
     try:
-        module_file = codecs.open(module_doc.filename, 'rU', encoding)
+        if six.PY2:
+            module_file = codecs.open(module_doc.filename, 'rU', encoding)
+        else:
+            module_file = codecs.open(module_doc.filename, 'r+b', encoding)
     except LookupError:
         log.warning("Unknown encoding %r for %s; using the default"
                     "encoding instead (iso-8859-1)" %
                     (encoding, module_doc.filename))
         encoding = 'iso-8859-1'
-        module_file = codecs.open(module_doc.filename, 'rU', encoding)
+        if six.PY2:
+            module_file = codecs.open(module_doc.filename, 'rU', encoding)
+        else:
+            module_file = codecs.open(module_doc.filename, 'r+b', encoding)
     tok_iter = tokenize.generate_tokens(module_file.readline)
     for toktype, toktext, (srow,scol), (erow,ecol), line_str in tok_iter:
         # BOM encoding marker: ignore.
         if (toktype == token.ERRORTOKEN and
-            (toktext == '\ufeff' or
+            (toktext == u'\ufeff' or
              toktext.encode(encoding) == '\xef\xbb\xbf')):
             pass
-            
+
         # Error token: abort
         elif toktype == token.ERRORTOKEN:
             raise ParseError('Error during parsing: invalid syntax '
                              '(%s, line %d, char %d: %r)' %
                              (module_doc.filename, srow, scol, toktext))
-        
+
         # Indent token: update the parent_doc stack.
         elif toktype == token.INDENT:
             if prev_line_doc is None:
@@ -557,7 +566,7 @@ def process_file(module_doc):
             else:
                 parent_docs.append(prev_line_doc)
             groups.append(None)
-                
+
         # Dedent token: update the parent_doc stack.
         elif toktype == token.DEDENT:
             if line_toks == []:
@@ -568,18 +577,18 @@ def process_file(module_doc):
                 # indented line, with no final newline.
                 # (otherwise, this is the wrong thing to do.)
                 pass
-            
+
         # Line-internal newline token: if we're still at the start of
         # the logical line, and we've seen one or more comment lines,
         # then discard them: blank lines are not allowed between a
         # comment block and the thing it describes.
         elif toktype == tokenize.NL:
-            if comments and not line_toks:
+            if not line_str.strip() and comments and not line_toks:
                 log.warning('Ignoring docstring comment block followed by '
                             'a blank line in %r on line %r' %
                             (module_doc.filename, srow-1))
                 comments = []
-                
+
         # Comment token: add to comments if appropriate.
         elif toktype == tokenize.COMMENT:
             if toktext.startswith(COMMENT_DOCSTRING_MARKER):
@@ -596,9 +605,9 @@ def process_file(module_doc):
                         break
                 else:
                     log.warning("Got group end marker without a corresponding "
-                                "start marker in %r on line %r" % 
+                                "start marker in %r on line %r" %
                                 (module_doc.filename, srow))
-            
+
         # Normal token: Add it to line_toks.  (If it's a non-unicode
         # string literal, then we need to re-encode using the file's
         # encoding, to get back to the original 8-bit data; and then
@@ -608,11 +617,12 @@ def process_file(module_doc):
             if lineno is None: lineno = srow
             if toktype == token.STRING:
                 str_prefixes = re.match('[^\'"]*', toktext).group()
-                if 'u' not in str_prefixes:
+                if (six.binary_type is str and 'u' not in str_prefixes or
+                    six.text_type is str and 'b' in str_prefixes):
                     s = toktext.encode(encoding)
                     toktext = decode_with_backslashreplace(s)
             line_toks.append( (toktype, toktext) )
-            
+
         # Decorator line: add it to the decorators list.
         elif line_toks and line_toks[0] == (token.OP, '@'):
             decorators.append(shallow_parse(line_toks))
@@ -621,7 +631,7 @@ def process_file(module_doc):
         # End of line token, but nothing to do.
         elif line_toks == []:
             pass
-            
+
         # End of line token: parse the logical line & process it.
         else:
             if start_group:
@@ -631,7 +641,7 @@ def process_file(module_doc):
             if parent_docs[-1] != 'skip_block':
                 try:
                     prev_line_doc = process_line(
-                        shallow_parse(line_toks), parent_docs, prev_line_doc, 
+                        shallow_parse(line_toks), parent_docs, prev_line_doc,
                         lineno, comments, decorators, encoding)
                 except ParseError as e:
                     raise ParseError('Error during parsing: invalid '
@@ -669,7 +679,7 @@ def process_file(module_doc):
             lineno = None
             comments = []
             decorators = []
-            
+
 def add_to_group(container, api_doc, group_name):
     if container.group_specs is UNKNOWN:
         container.group_specs = []
@@ -708,7 +718,7 @@ def shallow_parse(line_toks):
     implied by the grouping tokens (i.e., parenthases, braces, and
     brackets).  If the parenthases, braces, and brackets do not
     match, or are not balanced, then raise a ParseError.
-    
+
     Assign some structure to a sequence of structure (group parens).
     """
     stack = [[]]
@@ -797,11 +807,11 @@ def process_control_flow_line(line, parent_docs, prev_line_doc,
             split_on(line[1:], (token.NAME, 'in'))[0])
         parent = get_lhs_parent(loopvar_name, parent_docs)
         if parent is not None:
-            var_doc = VariableDoc(name=loopvar_name[-1], is_alias=False, 
+            var_doc = VariableDoc(name=loopvar_name[-1], is_alias=False,
                                   is_imported=False, is_instvar=False,
                                   docs_extracted_by='parser')
             set_variable(parent, var_doc)
-    
+
     if ((keyword == 'if' and PARSE_IF_BLOCKS and not script_guard(line)) or
         (keyword == 'elif' and PARSE_ELSE_BLOCKS) or
         (keyword == 'else' and PARSE_ELSE_BLOCKS) or
@@ -828,9 +838,9 @@ def process_control_flow_line(line, parent_docs, prev_line_doc,
 def process_import(line, parent_docs, prev_line_doc, lineno,
                    comments, decorators, encoding):
     if not isinstance(parent_docs[-1], NamespaceDoc): return
-    
+
     names = split_on(line[1:], (token.OP, ','))
-    
+
     for name in names:
         name_pieces = split_on(name, (token.NAME, 'as'))
         if len(name_pieces) == 1:
@@ -848,7 +858,7 @@ def process_import(line, parent_docs, prev_line_doc, lineno,
 def process_from_import(line, parent_docs, prev_line_doc, lineno,
                         comments, decorators, encoding):
     if not isinstance(parent_docs[-1], NamespaceDoc): return
-    
+
     pieces = split_on(line[1:], (token.NAME, 'import'))
     if len(pieces) != 2 or not pieces[0] or not pieces[1]:
         raise ParseError("Bad from-import")
@@ -872,7 +882,7 @@ def process_from_import(line, parent_docs, prev_line_doc, lineno,
     # >>> from os.path import join, split
     else:
         # Allow relative imports in this case, as per PEP 328
-        src_name = parse_dotted_name(lhs, 
+        src_name = parse_dotted_name(lhs,
             parent_name=parent_docs[-1].canonical_name)
         parts = split_on(rhs, (token.OP, ','))
         for part in parts:
@@ -910,13 +920,13 @@ def _process_fromstar_import(src, parent_docs):
     """
     # This is redundant: already checked by caller.
     if not isinstance(parent_docs[-1], NamespaceDoc): return
-    
+
     # If src is package-local, then convert it to a global name.
     src = _global_name(src, parent_docs)
 
     # Record the import
     parent_docs[0].imports.append(src) # mark that it's .*??
-    
+
     # [xx] add check for if we already have the source docs in our
     # cache??
 
@@ -925,7 +935,7 @@ def _process_fromstar_import(src, parent_docs):
         try: module_doc = _find(src)
         except ImportError: module_doc = None
         if isinstance(module_doc, ModuleDoc):
-            for name, imp_var in list(module_doc.variables.items()):
+            for name, imp_var in module_doc.variables.items():
                 # [xx] this is not exactly correct, but close.  It
                 # does the wrong thing if a __var__ is explicitly
                 # listed in __all__.
@@ -965,14 +975,14 @@ def _import_var(name, parent_docs):
     """
     # This is redundant: already checked by caller.
     if not isinstance(parent_docs[-1], NamespaceDoc): return
-    
+
     # If name is package-local, then convert it to a global name.
     src = _global_name(name, parent_docs)
     src_prefix = src[:len(src)-len(name)]
 
     # Record the import
     parent_docs[0].imports.append(name)
-    
+
     # [xx] add check for if we already have the source docs in our
     # cache??
 
@@ -992,7 +1002,7 @@ def _import_var(name, parent_docs):
     # If we got here, then either IMPORT_HANDLING='link', or we
     # did not successfully find the value's docs by parsing; use
     # a variable with an UNKNOWN value.
-    
+
     # Create any necessary intermediate proxy module values.
     container = parent_docs[-1]
     for i, identifier in enumerate(name[:-1]):
@@ -1001,7 +1011,7 @@ def _import_var(name, parent_docs):
             var_doc = _add_import_var(name[:i+1], identifier, container)
             var_doc.value = ModuleDoc(variables={}, sort_spec=[],
                                       proxy_for=src_prefix+name[:i+1],
-                                      submodules={}, 
+                                      submodules={},
                                       docs_extracted_by='parser')
         container = container.variables[identifier].value
 
@@ -1012,7 +1022,7 @@ def _import_var_as(src, name, parent_docs):
     """
     Handle a statement of the form:
         >>> import src as name
-        
+
     If L{IMPORT_HANDLING} is C{'parse'}, then first try to find
     the value by parsing; and create an appropriate variable in
     parentdoc.
@@ -1022,13 +1032,13 @@ def _import_var_as(src, name, parent_docs):
     """
     # This is redundant: already checked by caller.
     if not isinstance(parent_docs[-1], NamespaceDoc): return
-    
+
     # If src is package-local, then convert it to a global name.
     src = _global_name(src, parent_docs)
-    
+
     # Record the import
     parent_docs[0].imports.append(src)
-    
+
     if IMPORT_HANDLING == 'parse':
         # Parse the value and create a variable for it.
         try: val_doc = _find(src)
@@ -1101,12 +1111,12 @@ def process_assignment(line, parent_docs, prev_line_doc, lineno,
     # Decide whether the variable is an instance variable or not.
     # If it's an instance var, then discard the value.
     is_instvar = lhs_is_instvar(lhs_pieces, parent_docs)
-    
+
     # if it's not an instance var, and we're not in a namespace,
     # then it's just a local var -- so ignore it.
     if not (is_instvar or isinstance(parent_docs[-1], NamespaceDoc)):
         return None
-    
+
     # Evaluate the right hand side.
     if not is_instvar:
         rhs_val, is_alias = rhs_to_valuedoc(rhs, parent_docs, lineno)
@@ -1181,7 +1191,7 @@ def process_assignment(line, parent_docs, prev_line_doc, lineno,
         # If we have multiple left-hand-sides, then all but the
         # rightmost one are considered aliases.
         is_alias = True
-        
+
 
 def lhs_is_instvar(lhs_pieces, parent_docs):
     if not isinstance(parent_docs[-1], RoutineDoc):
@@ -1191,7 +1201,7 @@ def lhs_is_instvar(lhs_pieces, parent_docs):
     # <name> is a simple name.
     posargs = parent_docs[-1].posargs
     if posargs is UNKNOWN: return False
-    if not (len(lhs_pieces)==1 and len(posargs) > 0 and 
+    if not (len(lhs_pieces)==1 and len(posargs) > 0 and
             len(lhs_pieces[0]) == 3 and
             lhs_pieces[0][0] == (token.NAME, posargs[0]) and
             lhs_pieces[0][1] == (token.OP, '.') and
@@ -1205,7 +1215,7 @@ def lhs_is_instvar(lhs_pieces, parent_docs):
         elif parent_docs[i] != parent_docs[-1]:
             return False
     return False
-        
+
 def rhs_to_valuedoc(rhs, parent_docs, lineno):
     # Dotted variable:
     try:
@@ -1293,7 +1303,7 @@ def process_multi_stmt(line, parent_docs, prev_line_doc, lineno,
     """
     for statement in split_on(line, (token.OP, ';')):
         if not statement: continue
-        doc = process_line(statement, parent_docs, prev_line_doc, 
+        doc = process_line(statement, parent_docs, prev_line_doc,
                            lineno, None, decorators, encoding)
         prev_line_doc = doc
         decorators = []
@@ -1345,7 +1355,7 @@ def process_docstring(line, parent_docs, prev_line_doc, lineno,
     # According to a strict reading of PEP 263, this might not be the
     # right thing to do; but it will almost always be what the
     # module's author intended.
-    if isinstance(docstring, str):
+    if isinstance(docstring, six.binary_type):
         try:
             docstring = docstring.decode(encoding)
         except UnicodeDecodeError:
@@ -1355,7 +1365,7 @@ def process_docstring(line, parent_docs, prev_line_doc, lineno,
             docstring = decode_with_backslashreplace(docstring)
             log.warning("Parsing %s (line %s): %s docstring is not a "
                         "unicode string, but it contains non-ascii data." %
-                        (parent_docs[0].filename, lineno, 
+                        (parent_docs[0].filename, lineno,
                          prev_line_doc.canonical_name))
 
     # If the modified APIDoc is an instance variable, and it has
@@ -1382,7 +1392,7 @@ def process_docstring(line, parent_docs, prev_line_doc, lineno,
         log.warning("Parsing %s (line %s): %s has both a comment-docstring "
                     "and a normal (string) docstring; ignoring the comment-"
                     "docstring." % (parent_docs[0].filename, lineno, name))
-        
+
     prev_line_doc.docstring = docstring
     prev_line_doc.docstring_lineno = lineno
 
@@ -1392,7 +1402,7 @@ def process_docstring(line, parent_docs, prev_line_doc, lineno,
     if added_instvar:
         return prev_line_doc
 
-    
+
 #/////////////////////////////////////////////////////////////////
 # Line handler: function declarations
 #/////////////////////////////////////////////////////////////////
@@ -1411,7 +1421,7 @@ def process_funcdef(line, parent_docs, prev_line_doc, lineno,
     # Check syntax.
     if len(line) != 4 or line[3] != (token.OP, ':'):
         raise ParseError("Bad function definition line")
-    
+
     # If we're not in a namespace, then ignore it.
     parent_doc = parent_docs[-1]
     if not isinstance(parent_doc, NamespaceDoc): return
@@ -1430,7 +1440,7 @@ def process_funcdef(line, parent_docs, prev_line_doc, lineno,
 
     # If the preceeding comment includes a docstring, then add it.
     add_docstring_from_comments(func_doc, comments)
-    
+
     # Apply any decorators.
     func_doc.decorators = [pp_toktree(deco[1:]) for deco in decorators]
     decorators.reverse()
@@ -1462,7 +1472,7 @@ def process_funcdef(line, parent_docs, prev_line_doc, lineno,
                           is_imported=False, is_alias=False,
                           docs_extracted_by='parser')
     set_variable(parent_doc, var_doc)
-    
+
     # Return the new ValueDoc.
     return func_doc
 
@@ -1533,7 +1543,7 @@ def process_classdef(line, parent_docs, prev_line_doc, lineno,
                      comments, decorators, encoding):
     """
     The line handler for class declaration lines, such as:
-    
+
         >>> class Foo(Bar, Baz):
 
     This handler creates and initializes a new C{VariableDoc}
@@ -1583,17 +1593,17 @@ def process_classdef(line, parent_docs, prev_line_doc, lineno,
         for basedoc in class_doc.bases:
             if isinstance(basedoc, ClassDoc):
                 basedoc.subclasses.append(class_doc)
-    
+
     # If the preceeding comment includes a docstring, then add it.
     add_docstring_from_comments(class_doc, comments)
-    
+
     # Add the VariableDoc to our container.
     set_variable(parent_doc, var_doc)
 
     return class_doc
 
 def _proxy_base(**attribs):
-    return ClassDoc(variables={}, sort_spec=[], bases=[], subclasses=[], 
+    return ClassDoc(variables={}, sort_spec=[], bases=[], subclasses=[],
                     docs_extracted_by='parser', **attribs)
 
 def find_base(name, parent_docs):
@@ -1642,7 +1652,7 @@ def find_base(name, parent_docs):
                     log.info('Unable to find base', base_var.imported_from)
             finally:
                 sys.path = old_sys_path
-                
+
         # Either BASE_HANDLING='link' or parsing the base class failed;
         # return a proxy value for the base class.
         return _proxy_base(proxy_for=base_var.imported_from)
@@ -1671,7 +1681,7 @@ def process_append_to_all(line, parent_docs, prev_line_doc, lineno,
 
 def append_to_all(name, parent_docs, lineno):
     all_var = lookup_name('__all__', parent_docs)
-    
+
     error = None
     if all_var is None or all_var.value in (None, UNKNOWN):
         error = "variable __all__ not found."
@@ -1692,7 +1702,7 @@ def append_to_all(name, parent_docs, lineno):
         log.warning("Parsing %s (line %s): while processing an __all__"
                     ".append() statement or @public decorator: %s" %
                     (parent_docs[0].filename, lineno, error))
-    
+
 def is_append_to_all(line):
     """
     Check if a line is an __all__.append line()
@@ -1758,7 +1768,7 @@ def parse_dotted_name(elt_list, strip_parens=True, parent_name=None):
     @bug: does not handle 'x.(y).z'
     """
     if len(elt_list) == 0: raise ParseError("Bad dotted name")
-    
+
     # Handle ((x.y).z).  (If the contents of the parens include
     # anything other than dotted names, such as (x,y), then we'll
     # catch it below and raise a ParseError.
@@ -1774,10 +1784,10 @@ def parse_dotted_name(elt_list, strip_parens=True, parent_name=None):
         items = 1
         while len(elt_list) > items and elt_list[items][-1] == '.':
             items += 1
-            
+
         elt_list = elt_list[items:]
         prefix_name = parent_name[:-items]
-            
+
         # >>> from . import foo
         if not elt_list:
             if prefix_name == []:
@@ -1789,14 +1799,14 @@ def parse_dotted_name(elt_list, strip_parens=True, parent_name=None):
     name = DottedName(parse_name(elt_list[0], True))
     if prefix_name is not None:
         name = prefix_name + name
-        
+
     for i in range(2, len(elt_list), 2):
         dot, identifier = elt_list[i-1], elt_list[i]
         if  dot != (token.OP, '.'):
             raise ParseError("Bad dotted name")
         name = DottedName(name, parse_name(identifier, True))
     return name
-        
+
 def split_on(elt_list, split_tok):
     # [xx] add code to guarantee each elt is non-empty.
     result = [[]]
@@ -1831,13 +1841,13 @@ def parse_funcdef_arg(elt):
         return elt[1]
     else:
         raise ParseError("Bad argument -- expected name or tuple")
-    
+
 def parse_classdef_bases(elt):
     """
     If the given tree token element contains a valid base list
     (that contains only dotted names), then return a corresponding
     list of L{DottedName}s.  Otherwise, raise a ParseError.
-    
+
     @bug: Does not handle either of::
         - class A( (base.in.parens) ): pass
         - class B( (lambda:calculated.base)() ): pass
@@ -1858,7 +1868,7 @@ def parse_dotted_name_list(elt_list):
     ParseError.
     """
     names = []
-    
+
     state = 0
     for elt in elt_list:
         # State 0 -- Expecting a name, or end of arglist
@@ -1962,7 +1972,7 @@ def del_variable(namespace, name):
                 var_doc.value.canonical_name = UNKNOWN
         else:
             del_variable(namespace.variables[name[0]].value, name[1:])
-            
+
 #/////////////////////////////////////////////////////////////////
 #{ Name Lookup
 #/////////////////////////////////////////////////////////////////
@@ -1971,7 +1981,7 @@ def lookup_name(identifier, parent_docs):
     """
     Find and return the documentation for the variable named by
     the given identifier.
-    
+
     @rtype: L{VariableDoc} or C{None}
     """
     # We need to check 3 namespaces: locals, globals, and builtins.
@@ -1979,7 +1989,7 @@ def lookup_name(identifier, parent_docs):
     # nested scopes, because nested scope lookup does not apply to
     # nested class definitions, and we're not worried about variables
     # in nested functions.
-    if not isinstance(identifier, str):
+    if not isinstance(identifier, six.string_types):
         raise TypeError('identifier must be a string')
 
     # Locals
@@ -1993,10 +2003,10 @@ def lookup_name(identifier, parent_docs):
             return parent_docs[0].variables[identifier]
 
     # Builtins
-    builtins = epydoc.docintrospecter.introspect_docs(__builtin__)
-    if isinstance(builtins, NamespaceDoc):
-        if identifier in builtins.variables:
-            return builtins.variables[identifier]
+    builtins_ = epydoc.docintrospecter.introspect_docs(six.moves.builtins)
+    if isinstance(builtins_, NamespaceDoc):
+        if identifier in builtins_.variables:
+            return builtins_.variables[identifier]
 
     # We didn't find it; return None.
     return None
@@ -2075,7 +2085,7 @@ def _join_toktree(s1, s2):
 def _pp_toktree_add_piece(spacing, pieces, piece):
     s1 = pieces[-1]
     s2 = piece
-    
+
     if (s2=='' or s1=='' or
         s1 in ('-','`') or s2 in ('}',']',')','`',':') or
         s2[0] in ('.',',') or s1[-1] in ('(','[','{','.','\n',' ') or
@@ -2086,17 +2096,17 @@ def _pp_toktree_add_piece(spacing, pieces, piece):
         pass
     else:
         pieces.append(' ')
-        
+
     pieces.append(piece)
 
 def pp_toktree(elts, spacing='normal', indent=0):
     pieces = ['']
     _pp_toktree(elts, spacing, indent, pieces)
     return ''.join(pieces)
-    
+
 def _pp_toktree(elts, spacing, indent, pieces):
     add_piece = _pp_toktree_add_piece
-    
+
     for elt in elts:
         # Put a blank line before class & def statements.
         if elt == (token.NAME, 'class') or elt == (token.NAME, 'def'):
@@ -2120,7 +2130,7 @@ def _pp_toktree(elts, spacing, indent, pieces):
                 add_piece(spacing, pieces, elt[1])
         else:
             _pp_toktree(elt, spacing, indent, pieces)
-        
+
 #/////////////////////////////////////////////////////////////////
 #{ Helper Functions
 #/////////////////////////////////////////////////////////////////
@@ -2129,21 +2139,29 @@ def get_module_encoding(filename):
     """
     @see: U{PEP 263<http://www.python.org/peps/pep-0263.html>}
     """
-    module_file = open(filename, 'rU')
+    if six.PY2:
+        module_file = open(filename, 'rU')
+    else:
+        module_file = open(filename, 'r+b')
     try:
         lines = [module_file.readline() for i in range(2)]
-        if lines[0].startswith('\xef\xbb\xbf'):
+        if lines[0].startswith(six.b('\xef\xbb\xbf')):
             return 'utf-8'
         else:
             for line in lines:
-                m = re.search("coding[:=]\s*([-\w.]+)", line)
-                if m: return m.group(1)
-                
+                m = re.search(six.b("coding[:=]\s*([-\w.]+)"), line)
+                if m:
+                    coding = m.group(1)
+                    if (isinstance(coding, six.binary_type) and
+                        six.binary_type is not str):
+                        coding = coding.decode()
+                    return coding
+
         # Fall back on Python's default encoding.
         return 'iso-8859-1' # aka 'latin-1'
     finally:
         module_file.close()
-        
+
 def _get_module_name(filename, package_doc):
     """
     Return (dotted_name, is_package)

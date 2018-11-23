@@ -11,15 +11,20 @@ Functions to produce colorized HTML code for various objects.
 Currently, C{html_colorize} defines functions to colorize
 Python source code.
 """
+
+from __future__ import absolute_import
+from __future__ import print_function
+
 __docformat__ = 'epytext en'
 
 import re, codecs
 from epydoc import log
-from epydoc.util import py_src_filename
+from epydoc.util import py_src_filename, decode_with_backslashreplace
 from epydoc.apidoc import *
 import tokenize, token, cgi, keyword
-try: from io import StringIO
-except: from io import StringIO
+
+# Python 2/3 compatibility
+from epydoc.seven import six
 
 ######################################################################
 ## Python source colorizer
@@ -28,7 +33,7 @@ except: from io import StringIO
 Goals:
   - colorize tokens appropriately (using css)
   - optionally add line numbers
-  - 
+  -
 """
 
 #: Javascript code for the PythonSourceColorizer
@@ -58,7 +63,7 @@ function collapse(id) {
   var elt = document.getElementById(id+"-collapsed");
   if (elt) {
     elt.style.display = "block";
-    
+
     var indent = elt.getAttribute("indent");
     var pad = elt.getAttribute("pad");
     var s = "<tt class=\'py-lineno\'>";
@@ -75,7 +80,7 @@ function collapse(id) {
 function toggle(id) {
   elt = document.getElementById(id+"-toggle");
   if (elt.innerHTML == "-")
-      collapse(id); 
+      collapse(id);
   else
       expand(id);
   return false;
@@ -158,14 +163,14 @@ function doclink(id, name, targets_id) {
     box1.style.display = "inline";
     box1.style.top = 0;
     box1.style.left = 0;
-  
+
     // A shadow for fun
     var shadow = document.createElement("div");
     shadow.style.position = "absolute";
     shadow.style.left = "-1.3em";
     shadow.style.top = "-1.3em";
     shadow.style.background = "#404040";
-    
+
     // The inner box: absolute positioning.
     var box2 = document.createElement("div");
     box2.style.position = "relative";
@@ -185,11 +190,11 @@ function doclink(id, name, targets_id) {
     target_list = targets.split(",");
     for (var i=0; i<target_list.length; i++) {
         var target = target_list[i].split("=");
-        links += "<li><a href=\'" + target[1] + 
+        links += "<li><a href=\'" + target[1] +
                "\' style=\'text-decoration:none\'>" +
                target[0] + "</a></li>";
     }
-  
+
     // Put it all together.
     elt.insertBefore(box1, elt.childNodes.item(0));
     //box1.appendChild(box2);
@@ -198,7 +203,7 @@ function doclink(id, name, targets_id) {
     box2.innerHTML =
         "Which <b>"+name+"</b> do you want to see documentation for?" +
         "<ul style=\'margin-bottom: 0;\'>" +
-        links + 
+        links +
         "<li><a href=\'#\' style=\'text-decoration:none\' " +
         "onclick=\'kill_doclink(\\""+id+"\\");return false;\'>"+
         "<i>None of the above</i></a></li></ul>";
@@ -207,13 +212,13 @@ function doclink(id, name, targets_id) {
 }
 '''
 
-PYSRC_EXPANDTO_JAVASCRIPT = '''\
+PYSRC_EXPANDTO_JAVASCRIPT = six.u('''\
 <script type="text/javascript">
 <!--
 expandto(location.href);
 // -->
 </script>
-'''
+''')
 
 class PythonSourceColorizer:
     """
@@ -231,7 +236,7 @@ class PythonSourceColorizer:
       - CSS styles are used to color tokens according to their type.
         (See L{CSS_CLASSES} for a list of the different token types
         that are identified).
-        
+
       - Line numbers are included to the left of each line.
 
       - The first line of each class and function definition includes
@@ -304,7 +309,7 @@ class PythonSourceColorizer:
 
     #: A regular expression used to pick out the unicode encoding for
     #: the source file.
-    UNICODE_CODING_RE = re.compile(r'.*?\n?.*?coding[:=]\s*([-\w.]+)')
+    UNICODE_CODING_RE = re.compile(six.b(r'.*?\n?.*?coding[:=]\s*([-\w.]+)'))
 
     #: A configuration constant, used to determine whether or not to add
     #: collapsable <div> elements for definition blocks.
@@ -338,10 +343,10 @@ class PythonSourceColorizer:
         # Get the source version, if possible.
         try: module_filename = py_src_filename(module_filename)
         except: pass
-        
+
         #: The filename of the module we're colorizing.
         self.module_filename = module_filename
-        
+
         #: The dotted name of the module we're colorizing.
         self.module_name = module_name
 
@@ -353,21 +358,34 @@ class PythonSourceColorizer:
         #: decide which values an identifier might map to when creating
         #: href links from identifiers to the API docs for their values.
         self.name_to_docs = name_to_docs
-            
+
         #: A function that maps APIDoc -> URL, used to create href
         #: links from identifiers to the API documentation for their
         #: values.
         self.url_func = url_func
 
+        #: Encoding of input text
+        self.coding = None
+
         #: The index in C{text} of the last character of the last
         #: token we've processed.
-        self.pos = 0
+        self.input_pos = 0
+
+        #: The index in tokenizer output stream of the last character
+        #: of the last token we've processed.
+        self.token_pos = 0
 
         #: A list that maps line numbers to character offsets in
         #: C{text}.  In particular, line C{M{i}} begins at character
         #: C{line_offset[i]} in C{text}.  Since line numbers begin at
-        #: 1, the first element of C{line_offsets} is C{None}.
-        self.line_offsets = []
+        #: 1, the first element of C{token_line_offsets} is C{None}.
+        self.input_line_offsets = []
+
+        #: A list that maps line numbers to character offsets in
+        #: an output text from tokenizer. These values are consistent
+        #: with line/column counts returned from tokenizer (which in
+        #: python3 refer to the decoded string).
+        self.token_line_offsets = []
 
         #: A list of C{(toktype, toktext)} for all tokens on the
         #: logical line that we are currently processing.  Once a
@@ -410,26 +428,41 @@ class PythonSourceColorizer:
         #: The number of spaces to replace each tab in source code with
         self.tab_width = tab_width
 
-        
     def find_line_offsets(self):
         """
-        Construct the L{line_offsets} table from C{self.text}.
+        Construct the L{token_line_offsets} table from C{self.text}.
         """
         # line 0 doesn't exist; line 1 starts at char offset 0.
-        self.line_offsets = [None, 0]
+        self.token_line_offsets = [None, 0]
+        self.input_line_offsets = [None, 0]
         # Find all newlines in `text`, and add an entry to
-        # line_offsets for each one.
-        pos = self.text.find('\n')
-        while pos != -1:
-            self.line_offsets.append(pos+1)
-            pos = self.text.find('\n', pos+1)
+        # token_line_offsets for each one.
+        total = 0
+        bprev = 0
+        bnext = self.text.find(six.b('\n')) + 1
+        while bnext > 0:
+            line = self.text[bprev:bnext] # includes \n
+            if six.binary_type is not str:
+                line = line.decode(self.coding)
+            linelen = len(line)
+            total += linelen
+            pos = self.token_line_offsets[-1] + linelen
+            self.token_line_offsets.append(pos)
+            self.input_line_offsets.append(bnext)
+            bprev = bnext
+            bnext = self.text.find(six.b('\n'), bnext) + 1
+        tail = self.text[bprev:]
+        if six.binary_type is not str:
+            tail = tail.decode(self.coding)
+        total += len(tail)
         # Add a final entry, marking the end of the string.
-        self.line_offsets.append(len(self.text))
+        self.token_line_offsets.append(total)
+        self.input_line_offsets.append(len(self.text))
 
     def lineno_to_html(self):
-        template = '%%%ds' % self.linenum_size
+        template = '%%%dd' % self.linenum_size
         n = template % self.lineno
-        return '<a name="L%s"></a><tt class="py-lineno">%s</tt>' \
+        return '<a name="L%d"></a><tt class="py-lineno">%s</tt>' \
             % (self.lineno, n)
 
     def colorize(self):
@@ -438,7 +471,8 @@ class PythonSourceColorizer:
         module that was specified in the constructor.
         """
         # Initialize all our state variables
-        self.pos = 0
+        self.token_pos = 0
+        self.input_pos = 0
         self.cur_line = []
         self.context = []
         self.context_types = []
@@ -453,76 +487,114 @@ class PythonSourceColorizer:
         self.doclink_targets_cache = {}
 
         # Load the module's text.
-        self.text = open(self.module_filename).read()
-        self.text = self.text.expandtabs(self.tab_width).rstrip()+'\n'
+        self.text = open(self.module_filename, 'rb').read()
+        self.text = self.text.expandtabs(self.tab_width).rstrip() + six.b('\n')
 
-        # Construct the line_offsets table.
+        # Determine encoding.
+        if six.PY2:
+            do_tokenize = tokenize.tokenize
+            m = self.UNICODE_CODING_RE.match(self.text)
+            if m: self.coding = m.group(1)
+            else: self.coding = 'iso-8859-1'
+        else:
+            coding, _ = tokenize.detect_encoding(six.BytesIO(self.text).readline)
+            if coding.lower() == 'utf-8-sig':
+                coding = 'utf-8'
+            self.coding = coding
+            def do_tokenize(readfcn, tokeneater):
+                for tok in tokenize.tokenize(readfcn):
+                    self.tokeneater(*tok)
+        if self.coding is None:
+            raise ValueError("coding is None: %s" % repr(self.text))
+
+        # Construct the token_line_offsets table.
         self.find_line_offsets()
 
-        num_lines = self.text.count('\n')+1
+        num_lines = self.text.count(six.b('\n'))+1
         self.linenum_size = len(repr(num_lines+1))
-        
+
+        output = six.StringIO()
+        self.out = output.write
+
+        if six.binary_type is not str:
+            readline = six.BytesIO(self.text).readline
+        else:
+            readline = six.StringIO(self.text).readline
+
         # Call the tokenizer, and send tokens to our `tokeneater()`
         # method.  If anything goes wrong, then fall-back to using
         # the input text as-is (with no colorization).
         try:
-            output = StringIO()
-            self.out = output.write
-            tokenize.tokenize(StringIO(self.text).readline, self.tokeneater)
+            do_tokenize(readline, self.tokeneater)
+        except tokenize.TokenError as ex:
+            html = self.text
+        else:
             html = output.getvalue()
             if self.has_decorators:
                 html = self._FIX_DECORATOR_RE.sub(r'\2\1', html)
-        except tokenize.TokenError as ex:
-            html = self.text
 
         # Check for a unicode encoding declaration.
-        m = self.UNICODE_CODING_RE.match(self.text)
-        if m: coding = m.group(1)
-        else: coding = 'iso-8859-1'
-
-        # Decode the html string into unicode, and then encode it back
-        # into ascii, replacing any non-ascii characters with xml
-        # character references.
-        try:
-            html = html.decode(coding).encode('ascii', 'xmlcharrefreplace')
-        except LookupError:
-            coding = 'iso-8859-1'
-            html = html.decode(coding).encode('ascii', 'xmlcharrefreplace')
-        except UnicodeDecodeError as e:
-            log.warning("Unicode error while generating syntax-highlighted "
-                        "source code: %s (%s)" % (e, self.module_filename))
-            html = html.decode(coding, 'ignore').encode(
-                'ascii', 'xmlcharrefreplace')
-            
+        if isinstance(html, six.binary_type):
+            # Decode the html string into unicode, and then encode it back
+            # into ascii, replacing any non-ascii characters with xml
+            # character references.
+            try:
+                html = html.decode(self.coding)
+            except LookupError:
+                coding = 'iso-8859-1'
+                try:
+                    html = html.decode(coding)
+                except UnicodeDecodeError as e:
+                    log.warning("Unicode error while generating syntax-highlighted "
+                                "source code: %s (%s)" % (e, self.module_filename))
+                    html = html.decode(coding, 'ignore')
+                html = html.encode('ascii', 'xmlcharrefreplace')
 
         # Call expandto.
         html += PYSRC_EXPANDTO_JAVASCRIPT
 
         return html
 
-    def tokeneater(self, toktype, toktext, xxx_todo_changeme, xxx_todo_changeme1, line):
+    def tokeneater(self, toktype, toktext, srowcol, erowcol, line):
         """
         A callback function used by C{tokenize.tokenize} to handle
         each token in the module.  C{tokeneater} collects tokens into
         the C{self.cur_line} list until a complete logical line has
         been formed; and then calls L{handle_line} to process that line.
         """
-        (srow,scol) = xxx_todo_changeme
-        (erow,ecol) = xxx_todo_changeme1
+        srow, scol = srowcol
+        erow, ecol = erowcol
+        # If we encounter any errors, then just give up.
         if toktype == token.ERRORTOKEN:
             raise tokenize.TokenError(toktype)
+
+        if hasattr(tokenize, 'ENCODING') and toktype == tokenize.ENCODING:
+            if self.coding is None:
+                self.coding = toktext
+            return
+
+        token_startpos = self.token_line_offsets[srow] + scol
+        if six.binary_type is str:
+            input_startpos = token_startpos
+            input_toktext = toktext
+        else:
+            input_scol = len(line[:scol].encode(self.coding))
+            input_startpos = self.input_line_offsets[srow] + input_scol
+            input_toktext = toktext.encode(self.coding)
 
         # Did we skip anything whitespace?  If so, add a pseudotoken
         # for it, with toktype=None.  (Note -- this skipped string
         # might also contain continuation slashes; but I won't bother
         # to colorize them.)
-        startpos = self.line_offsets[srow] + scol
-        if startpos > self.pos:
-            skipped = self.text[self.pos:startpos]
+        if input_startpos > self.input_pos:
+            skipped = self.text[self.input_pos:input_startpos]
+            if six.binary_type is not str:
+                skipped = skipped.decode(self.coding)
             self.cur_line.append( (None, skipped) )
 
         # Update our position.
-        self.pos = startpos + len(toktext)
+        self.token_pos = token_startpos + len(toktext)
+        self.input_pos = input_startpos + len(input_toktext)
 
         # Update our current line.
         self.cur_line.append( (toktype, toktext) )
@@ -555,7 +627,7 @@ class PythonSourceColorizer:
         def_type = None
 
         # does this line start a class/func def?
-        starting_def_block = False 
+        starting_def_block = False
 
         in_base_list = False
         in_param_list = False
@@ -575,12 +647,16 @@ class PythonSourceColorizer:
         # Loop through each token, and colorize it appropriately.
         for i, (toktype, toktext) in enumerate(line):
             if type(s) is not str:
-                if type(s) is str:
+                if type(s) is six.text_type: # only PY2 -> unicode
                     log.error('While colorizing %s -- got unexpected '
                               'unicode string' % self.module_name)
                     s = s.encode('ascii', 'xmlcharrefreplace')
+                elif type(s) is six.binary_type: # only PY3 -> bytes
+                    log.error('While colorizing %s -- got unexpected '
+                              'binary string' % self.module_name)
+                    s = decode_with_backslashreplace(s)
                 else:
-                    raise ValueError('Unexpected value for s -- %s' % 
+                    raise ValueError('Unexpected value for s -- %s' %
                                      type(s).__name__)
 
             # For each token, determine its css class and whether it
@@ -694,8 +770,7 @@ class PythonSourceColorizer:
                     and self.url_func is not None):
                     docs = self.name_to_docs.get(toktext)
                     if docs:
-                        tooltip='\n'.join([str(d.canonical_name)
-                                           for d in docs])
+                        tooltip='\n'.join([str(d.canonical_name) for d in docs])
                         if len(docs) == 1 and self.GUESS_LINK_TARGETS:
                             url = self.url_func(docs[0])
                         else:
@@ -722,7 +797,7 @@ class PythonSourceColorizer:
                 if toktext in (')',']','}'): in_param_default -= 1
                 if toktext == ',' and in_param_default == 1:
                     in_param_default = 0
-                
+
             # Write this token, with appropriate colorization.
             if tooltip and self.ADD_TOOLTIPS:
                 tooltip_html = ' title="%s"' % tooltip
@@ -736,7 +811,7 @@ class PythonSourceColorizer:
                       (uid, css_class_html, targets_html, tooltip_html,
                        css_class_html, onclick))
             elif url:
-                if isinstance(url, str):
+                if isinstance(url, six.text_type):
                     url = url.encode('ascii', 'xmlcharrefreplace')
                 s += ('<a%s%s href="%s">' %
                       (tooltip_html, css_class_html, url))
@@ -777,7 +852,7 @@ class PythonSourceColorizer:
             name=self.context_name(def_name)
             self.out(self.START_DEF_BLOCK % (name, linenum_padding,
                                              indentation, name))
-            
+
         self.def_name = def_name
         self.def_type = def_type
 
@@ -806,7 +881,7 @@ class PythonSourceColorizer:
             onclick = ("return doclink('%s', '%s', '%s');" %
                        (uid, name, uid))
             return uid, onclick, targets
-            
+
     def doc_descr(self, doc, context):
         name = str(doc.canonical_name)
         descr = '%s %s' % (self.doc_kind(doc), name)
@@ -845,7 +920,7 @@ class PythonSourceColorizer:
                        'onclick="return toggle(\'%s\');">-</a>\\2' %
                        (name, name, name, name))
         return re.sub('(.*) (<tt class="py-line">.*)\Z', replacement, s)
-                    
+
     def is_docstring(self, line, i):
         if line[i][0] != token.STRING: return False
         for toktype, toktext in line[i:]:
@@ -853,7 +928,7 @@ class PythonSourceColorizer:
                                tokenize.NL, token.STRING, None):
                 return False
         return True
-                               
+
     def add_line_numbers(self, s, css_class):
         result = ''
         start = 0
@@ -890,7 +965,7 @@ class PythonSourceColorizer:
         r'\s*<tt class="py-line">(?:<tt class="py-decorator">.*|\s*</tt>|'
         r'\s*<tt class="py-comment">.*)\n)+)'
         r'(<a name="\w+"></a><div id="\w+-def">)', re.MULTILINE)
-    
+
 _HDR = '''\
 <?xml version="1.0" encoding="ascii"?>
         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -901,7 +976,7 @@ _HDR = '''\
           <link rel="stylesheet" href="epydoc.css" type="text/css" />
           <script type="text/javascript" src="epydoc.js"></script>
         </head>
-        
+
         <body bgcolor="white" text="black" link="blue" vlink="#204080"
               alink="#204080">
 '''
@@ -909,7 +984,7 @@ _FOOT = '</body></html>'
 if __name__=='__main__':
     #s = PythonSourceColorizer('../apidoc.py', 'epydoc.apidoc').colorize()
     s = PythonSourceColorizer('/tmp/fo.py', 'epydoc.apidoc').colorize()
-    #print s
+    #print(s)
     import codecs
     f = codecs.open('/home/edloper/public_html/color3.html', 'w', 'ascii', 'xmlcharrefreplace')
     f.write(_HDR+'<pre id="py-src-top" class="py-src">'+s+'</pre>'+_FOOT)
