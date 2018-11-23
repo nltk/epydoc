@@ -135,7 +135,7 @@ class DotGraph(object):
         have the same uid."""
 
         # Encode the title, if necessary.
-        if isinstance(self.title, str):
+        if isinstance(self.title, unicode):
             self.title = self.title.encode('ascii', 'xmlcharrefreplace')
 
         # Make sure the UID isn't too long.
@@ -181,7 +181,7 @@ class DotGraph(object):
         psfile.close()
         # Use ps2pdf to generate the pdf output.
         try: run_subprocess(('ps2pdf', '-dEPSCrop', eps_file, pdf_file))
-        except RunSubprocessError as e:
+        except RunSubprocessError, e:
             log.warning("Unable to render Graphviz dot graph (%s):\n"
                             "ps2pdf failed." % self.title)
             return None
@@ -362,7 +362,7 @@ class DotGraph(object):
             result, err = run_subprocess((DOT_COMMAND,)+options,
                                          self.to_dotfile(**kwparam))
             if err: log.warning("Graphviz dot warning(s):\n%s" % err)
-        except OSError as e:
+        except OSError, e:
             log.warning("Unable to render Graphviz dot graph (%s):\n%s" %
                         (self.title, e))
             import tempfile, epydoc
@@ -389,9 +389,9 @@ class DotGraph(object):
         """
         lines = ['digraph %s {' % self.uid,
                  'node [%s]' % ','.join(['%s="%s"' % (k,v) for (k,v)
-                                         in list(self.node_defaults.items())]),
+                                         in self.node_defaults.items()]),
                  'edge [%s]' % ','.join(['%s="%s"' % (k,v) for (k,v)
-                                         in list(self.edge_defaults.items())])]
+                                         in self.edge_defaults.items()])]
         if size:
             lines.append('size="%s"' % size)
         if self.body:
@@ -405,7 +405,7 @@ class DotGraph(object):
         lines.append('}')
 
         # Default dot input encoding is UTF-8
-        return '\n'.join(lines).encode('utf-8')
+        return u'\n'.join(lines).encode('utf-8')
 
 class DotGraphNode(object):
     _next_id = 0
@@ -434,7 +434,7 @@ class DotGraphNode(object):
         """
         Return the dot commands that should be used to render this node.
         """
-        attribs = ['%s="%s"' % (k,v) for (k,v) in list(self._attribs.items())
+        attribs = ['%s="%s"' % (k,v) for (k,v) in self._attribs.items()
                    if v is not None]
         if self._html_label:
             attribs.insert(0, 'label=<%s>' % (self._html_label,))
@@ -471,7 +471,7 @@ class DotGraphEdge(object):
         if (self.end.port is not None and 'tailport' not in attribs):
             attribs['tailport'] = self.end.port
         # Convert attribs to a string
-        attribs = ','.join(['%s="%s"' % (k,v) for (k,v) in list(attribs.items())
+        attribs = ','.join(['%s="%s"' % (k,v) for (k,v) in attribs.items()
                             if v is not None])
         if attribs: attribs = ' [%s]' % attribs
         # Return the dotfile edge.
@@ -950,7 +950,7 @@ class DotGraphUmlClassNode(DotGraphNode):
                               attributes, operations, qualifiers)
 
     def to_dotfile(self):
-        attribs = ['%s="%s"' % (k,v) for (k,v) in list(self._attribs.items())]
+        attribs = ['%s="%s"' % (k,v) for (k,v) in self._attribs.items()]
         attribs.append('label=<%s>' % self._get_html_label())
         s = 'node%d%s' % (self.id, ' [%s]' % (','.join(attribs)))
         if not self.collapsed:
@@ -1095,7 +1095,7 @@ class DotGraphUmlModuleNode(DotGraphNode):
             return '#%06x' % ((red<<16)+(green<<8)+blue)
         
     def to_dotfile(self):
-        attribs = ['%s="%s"' % (k,v) for (k,v) in list(self._attribs.items())]
+        attribs = ['%s="%s"' % (k,v) for (k,v) in self._attribs.items()]
         label, depth, width = self._get_html_label(self.module_doc)
         attribs.append('label=<%s>' % label)
         return 'node%d%s' % (self.id, ' [%s]' % (','.join(attribs)))
@@ -1288,7 +1288,7 @@ def _add_class_tree_subclasses(graph, classes, mknode, mkedge, linker,
 def _add_class_tree_inheritance(graph, classes, mknode, mkedge, linker,
                                 context, options, cls2node, truncated):
     # Add inheritance edges.
-    for (cls, node) in list(cls2node.items()):
+    for (cls, node) in cls2node.items():
         if cls.bases is UNKNOWN: continue
         for base in cls.bases:
             if base in cls2node:
@@ -1449,7 +1449,7 @@ def call_graph(api_docs, docindex, linker, context=None, **options):
         if isinstance(api_doc, RoutineDoc):
             functions.append(api_doc)
         elif isinstance(api_doc, NamespaceDoc):
-            for vardoc in list(api_doc.variables.values()):
+            for vardoc in api_doc.variables.values():
                 if isinstance(vardoc.value, RoutineDoc):
                     functions.append(vardoc.value)
 
@@ -1507,7 +1507,7 @@ def get_dot_version():
                 _dot_version = [int(x) for x in m.group(1).split('.')]
             else:
                 _dot_version = (0,)
-        except OSError as e:
+        except OSError, e:
             log.error('dot executable not found; graphs will not be '
                       'generated.  Adjust your shell\'s path, or use '
                       '--dotpath to specify the path to the dot '

@@ -143,7 +143,7 @@ class LatexWriter:
         reference it via \RequirePackage.
         """
         # Write all the standard style files
-        for (name, sty) in list(STYLESHEETS.items()):
+        for (name, sty) in STYLESHEETS.items():
             out = open(os.path.join(directory, 'epydoc-%s.sty' % name), 'wb')
             out.write(sty)
             out.close()
@@ -182,7 +182,7 @@ class LatexWriter:
         else:
             result = []
             write_func(result.append, *args)
-            s = ''.join(result)
+            s = u''.join(result)
             try:
                 s = s.encode(self._encoding)
             except UnicodeError:
@@ -897,7 +897,7 @@ class LatexWriter:
         return s
 
     def _arg_name(self, arg):
-        if isinstance(arg, str):
+        if isinstance(arg, basestring):
             return plaintext_to_latex(arg)
         else:
             return '\\TupleArg{%s}' % '\\and '.join([self._arg_name(a)
@@ -996,7 +996,7 @@ class LatexWriter:
             
         for field in fields:
             if field.takes_arg:
-                for arg, descrs in list(field_values[field].items()):
+                for arg, descrs in field_values[field].items():
                     s += self.meatadata_field(doc, field, descrs,
                                               indent, arg)
             else:

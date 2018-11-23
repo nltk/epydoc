@@ -67,7 +67,7 @@ __docformat__ = 'epytext en'
 ## Imports
 ######################################################################
 
-import sys, os, os.path, builtins, imp, re, inspect
+import sys, os, os.path, __builtin__, imp, re, inspect
 from epydoc.apidoc import *
 from epydoc.docintrospecter import introspect_docs
 from epydoc.docintrospecter import get_value_from_filename, get_value_from_name
@@ -100,7 +100,7 @@ class BuildOptions:
                 and re.compile(exclude_introspect) or None)
             self._parse_regexp = (exclude_parse
                 and re.compile(exclude_parse) or None)
-        except Exception as exc:
+        except Exception, exc:
             log.error('Error in regular expression pattern: %s' % exc)
             raise
 
@@ -202,7 +202,7 @@ def build_doc_index(items, introspect=True, parse=True, add_submodules=True,
         options = BuildOptions(parse=parse, introspect=introspect,
             exclude_introspect=exclude_introspect, exclude_parse=exclude_parse,
             add_submodules=add_submodules)
-    except Exception as e:
+    except Exception, e:
         # log.error already reported by constructor.
         return None
 
@@ -285,7 +285,7 @@ def build_doc_index(items, introspect=True, parse=True, add_submodules=True,
         # the value's variables' docstrings
         if (isinstance(val_doc, NamespaceDoc) and
             val_doc.variables not in (None, UNKNOWN)):
-            for var_doc in list(val_doc.variables.values()):
+            for var_doc in val_doc.variables.values():
                 # Now we have a chance to propagate the defining module
                 # to objects for which introspection is not possible,
                 # such as properties.
@@ -332,7 +332,7 @@ def _report_valdoc_progress(i, val_doc, val_docs):
 def _import_docs_from_items(items, options):
     for item in items:
         # Make sure the item's module is imported.
-        if isinstance(item, str):
+        if isinstance(item, basestring):
             if os.path.isfile(item):
                 _do_import(item, options)
             elif is_package_dir(item):
@@ -346,7 +346,7 @@ def _import_docs_from_items(items, options):
                         val = get_value_from_name(item)
                         if options.add_submodules and inspect.ismodule(val):
                             _import_docs_from_package(val, options)
-                    except ImportError as e: pass
+                    except ImportError, e: pass
 
 def _import_docs_from_package(pkg, options):
     subpackage_filenames = set()
@@ -364,7 +364,7 @@ def _import_docs_from_package(pkg, options):
                     subpackage_filenames.add(os.path.join(filename,
                                                           '__init__.py'))
 
-    for filename in list(module_filenames.values()):
+    for filename in module_filenames.values():
         _do_import(filename, options, pkg.__name__)
     for subpackage_filename in subpackage_filenames:
         subpackage = _do_import(subpackage_filename, options, pkg.__name__)
@@ -382,7 +382,7 @@ def _do_import(filename, options, parent=None):
         log.progress(0, 'Importing %s' % modulename)
         #log.debug('importing %r (%s)' % (filename, modulename))
         try: return get_value_from_filename(filename)
-        except ImportError as e: return None
+        except ImportError, e: return None
 
 #/////////////////////////////////////////////////////////////////
 # Documentation Generation
@@ -409,7 +409,7 @@ def _get_docs_from_items(items, options):
     # Collect (introspectdoc, parsedoc) pairs for each item.
     doc_pairs = []
     for item in items:
-        if isinstance(item, str):
+        if isinstance(item, basestring):
             if is_module_file(item):
                 doc_pairs.append(_get_docs_from_module_file(
                     item, options, progress_estimator))
@@ -477,7 +477,7 @@ def _get_docs_from_pyobject(obj, options, progress_estimator):
     introspect_error = parse_error = None
     try:
         introspect_doc = introspect_docs(value=obj)
-    except ImportError as e:
+    except ImportError, e:
         log.error(e)
         return (None, None)
     if options.parse:
@@ -512,14 +512,14 @@ def _get_docs_from_pyname(name, options, progress_estimator,
     if options.must_introspect(name):
         try:
             introspect_doc = introspect_docs(name=name)
-        except ImportError as e:
+        except ImportError, e:
             introspect_error = str(e)
     if options.must_parse(name):
         try:
             parse_doc = parse_docs(name=name)
-        except ParseError as e:
+        except ParseError, e:
             parse_error = str(e)
-        except ImportError as e:
+        except ImportError, e:
             # If we get here, then there' probably no python source
             # available; don't bother to generate a warnining.
             pass
@@ -543,14 +543,14 @@ def _get_docs_from_pyscript(filename, options, progress_estimator):
             introspect_doc = introspect_docs(filename=filename, is_script=True)
             if introspect_doc.canonical_name is UNKNOWN:
                 introspect_doc.canonical_name = munge_script_name(filename)
-        except ImportError as e:
+        except ImportError, e:
             introspect_error = str(e)
     if options.parse:
         try:
             parse_doc = parse_docs(filename=filename, is_script=True)
-        except ParseError as e:
+        except ParseError, e:
             parse_error = str(e)
-        except ImportError as e:
+        except ImportError, e:
             parse_error = str(e)
                 
     # Report any errors we encountered.
@@ -606,13 +606,13 @@ def _get_docs_from_module_file(filename, options, progress_estimator,
                 filename=filename, context=parent_docs[0])
             if introspect_doc.canonical_name is UNKNOWN:
                 introspect_doc.canonical_name = modulename
-        except ImportError as e:
+        except ImportError, e:
             introspect_error = str(e)
     if src_file_available and options.must_parse(modulename):
         try:
             parse_doc = parse_docs(
                 filename=filename, context=parent_docs[1])
-        except (ParseError, ImportError, IOError, OSError) as e:
+        except (ParseError, ImportError, IOError, OSError), e:
             parse_error = str(e)
 
     # Report any errors we encountered.
@@ -649,11 +649,11 @@ def _get_docs_from_submodules(item, pkg_docs, options, progress_estimator):
                     subpackage_dirs.add(filename)
 
     # Update our estimate of the number of modules in this package.
-    progress_estimator.revise_estimate(item, list(module_filenames.items()),
+    progress_estimator.revise_estimate(item, module_filenames.items(),
                                        subpackage_dirs)
 
     docs = [pkg_docs]
-    for module_filename in list(module_filenames.values()):
+    for module_filename in module_filenames.values():
         d = _get_docs_from_module_file(
             module_filename, options, progress_estimator, pkg_docs)
         docs.append(d)
@@ -931,8 +931,8 @@ def merge_docs(introspect_doc, parse_doc, cyclecheck=None, path=None):
         _merge_posargs_and_defaults(introspect_doc, parse_doc, path)
     
     # Merge the two api_doc's attributes.
-    for attrib in set(list(introspect_doc.__dict__.keys()) +
-                      list(parse_doc.__dict__.keys())):
+    for attrib in set(introspect_doc.__dict__.keys() +
+                      parse_doc.__dict__.keys()):
         # Be sure not to merge any private attributes (especially
         # __mergeset or __has_been_hashed!)
         if attrib.startswith('_'): continue
@@ -997,7 +997,7 @@ def merge_attribute(attrib, introspect_doc, parse_doc, cyclecheck, path):
 
 def merge_variables(varlist1, varlist2, precedence, cyclecheck, path):
     # Merge all variables that are in both sets.
-    for varname, var1 in list(varlist1.items()):
+    for varname, var1 in varlist1.items():
         var2 = varlist2.get(varname)
         if var2 is not None:
             var = merge_docs(var1, var2, cyclecheck, path+'.'+varname)
@@ -1005,7 +1005,7 @@ def merge_variables(varlist1, varlist2, precedence, cyclecheck, path):
             varlist2[varname] = var
 
     # Copy any variables that are not in varlist1 over.
-    for varname, var in list(varlist2.items()):
+    for varname, var in varlist2.items():
         varlist1.setdefault(varname, var)
 
     return varlist1
@@ -1198,7 +1198,7 @@ def assign_canonical_names(val_doc, name, docindex, score=0):
         val_doc.canonical_name is not UNKNOWN):
         # If this is the first time we've seen val_doc, and it
         # already has a name, then don't change that name.
-        _name_scores[val_doc] = sys.maxsize
+        _name_scores[val_doc] = sys.maxint
         name = val_doc.canonical_name
         score = 0
     else:
@@ -1211,7 +1211,7 @@ def assign_canonical_names(val_doc, name, docindex, score=0):
 
     # Recurse to any contained values.
     if isinstance(val_doc, NamespaceDoc):
-        for var_doc in list(val_doc.variables.values()):
+        for var_doc in val_doc.variables.values():
             # Set the variable's canonical name.
             varname = DottedName(name, var_doc.name)
             var_doc.canonical_name = varname
@@ -1315,7 +1315,7 @@ def find_overrides(class_doc):
     for base_class in list(class_doc.mro(warn_about_bad_bases=True)):
         if base_class == class_doc: continue
         if base_class.variables is UNKNOWN: continue
-        for name, var_doc in list(base_class.variables.items()):
+        for name, var_doc in base_class.variables.items():
             if ( not (name.startswith('__') and not name.endswith('__')) and
                  base_class == var_doc.container and
                  name in class_doc.variables and 
@@ -1338,7 +1338,7 @@ def inherit_docs(class_doc, inherit_from_object):
 
         # Inherit any variables.
         if base_class.variables is UNKNOWN: continue
-        for name, var_doc in list(base_class.variables.items()):
+        for name, var_doc in base_class.variables.items():
             # If it's a __private variable, then don't inherit it.
             if name.startswith('__') and not name.endswith('__'):
                 continue

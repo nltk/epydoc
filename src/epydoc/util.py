@@ -27,7 +27,7 @@ PY_BIN_EXTENSIONS = ['.pyc', '.so', '.pyd']
 
 def is_module_file(path):
     # Make sure it's a file name.
-    if not isinstance(path, str):
+    if not isinstance(path, basestring):
         return False
     (dir, filename) = os.path.split(path)
     (basename, extension) = os.path.splitext(filename)
@@ -36,7 +36,7 @@ def is_module_file(path):
             extension in PY_SRC_EXTENSIONS+PY_BIN_EXTENSIONS)
 
 def is_src_filename(filename):
-    if not isinstance(filename, str): return False
+    if not isinstance(filename, basestring): return False
     if not os.path.exists(filename): return False
     return os.path.splitext(filename)[1] in PY_SRC_EXTENSIONS
     
@@ -47,7 +47,7 @@ def is_package_dir(dirname):
     and its name is a valid identifier).
     """
     # Make sure it's a directory name.
-    if not isinstance(dirname, str):
+    if not isinstance(dirname, basestring):
         return False
     if not os.path.isdir(dirname):
         return False
@@ -224,7 +224,7 @@ def run_subprocess(cmd, data=None):
     @raise OSError: If there is any problem executing the
         command, or if its exitval is not 0.
     """
-    if isinstance(cmd, str):
+    if isinstance(cmd, basestring):
         cmd = cmd.split()
 
     # Under Python 2.4+, use subprocess
@@ -276,7 +276,7 @@ def run_subprocess(cmd, data=None):
             try:
                 to_child.write(data)
             # Guard for a broken pipe error
-            except IOError as e:
+            except IOError, e:
                 raise OSError(e)
         to_child.close()
         out = from_child.read()
@@ -355,11 +355,11 @@ class TerminalController:
         # Colors
         set_fg = self._tigetstr('setf')
         if set_fg:
-            for i,color in zip(list(range(len(self._COLORS))), self._COLORS):
+            for i,color in zip(range(len(self._COLORS)), self._COLORS):
                 setattr(self, color, curses.tparm(set_fg, i) or '')
         set_fg_ansi = self._tigetstr('setaf')
         if set_fg_ansi:
-            for i,color in zip(list(range(len(self._ANSICOLORS))), self._ANSICOLORS):
+            for i,color in zip(range(len(self._ANSICOLORS)), self._ANSICOLORS):
                 setattr(self, color, curses.tparm(set_fg_ansi, i) or '')
 
     def _tigetstr(self, cap_name):

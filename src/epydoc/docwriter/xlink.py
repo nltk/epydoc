@@ -247,7 +247,7 @@ class DocUrlGenerator(UrlGenerator):
         """
         self._filename = str(f)
 
-        if isinstance(f, str):
+        if isinstance(f, basestring):
             f = open(f)
 
         self.load_records(self._iter_tuples(f))
@@ -398,7 +398,7 @@ def create_api_role(name, problematic):
         # Get the resolver from the register and create an url from it.
         try:
             url = api_register[name].get_url(target)
-        except IndexError as exc:
+        except IndexError, exc:
             msg = inliner.reporter.warning(str(exc), line=lineno)
             if problematic:
                 prb = inliner.problematic(rawtext, text, msg)
@@ -505,8 +505,8 @@ class ApiLinkReader(Reader):
                 for name, root in map(split_name, settings.external_api_root):
                     set_api_root(name, root)
 
-        except OptionValueError as exc:
-            print("%s: %s" % (exc.__class__.__name__, exc), file=sys.stderr)
+        except OptionValueError, exc:
+            print >>sys.stderr, "%s: %s" % (exc.__class__.__name__, exc)
             sys.exit(2)
 
     read_configuration = classmethod(read_configuration)
