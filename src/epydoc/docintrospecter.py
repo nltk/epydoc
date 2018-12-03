@@ -404,6 +404,8 @@ def introspect_class(cls, class_doc, module_name=None):
             for base in bases:
                 basedoc = introspect_docs(base)
                 class_doc.bases.append(basedoc)
+                if not hasattr(basedoc,'subclasses'):
+                    basedoc.subclasses=[]
                 basedoc.subclasses.append(class_doc)
 
             bases.reverse()

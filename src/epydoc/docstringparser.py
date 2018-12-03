@@ -537,7 +537,7 @@ def report_errors(api_doc, docindex, parse_errors, field_warnings):
             message = error.descr()
             messages.setdefault(message, []).append(error.linenum())
         message_items = list(messages.items())
-        message_items.sort(key=lambda a,b:six.cmp(min(a[1]), min(b[1])))
+        message_items.sort(lambda a,b:six.cmp(min(a[1]), min(b[1])))
         for message, linenums in message_items:
             linenums = [n for n in linenums if n is not None]
             if len(linenums) == 0:
