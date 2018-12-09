@@ -1283,8 +1283,8 @@ def _profile():
         #                         2005-September/047099.html>)
         if (hasattr(Profile, 'dispatch') and
             Profile.dispatch['c_exception'] is
-            Profile.trace_dispatch_exception.im_func):
-            trace_dispatch_return = Profile.trace_dispatch_return.im_func
+            six.get_method_function(Profile.trace_dispatch_exception)):
+            trace_dispatch_return = six.get_method_function(Profile.trace_dispatch_return)
             Profile.dispatch['c_exception'] = trace_dispatch_return
         try:
             prof = Profile()
